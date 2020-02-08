@@ -170,7 +170,7 @@ def start_collabloration_server(main):
     Start the collab/team server
     """
     if args == None:
-        print helpers.color("[!] Error starting team server")
+        print(helpers.color("[!] Error starting team server"))
         sys.exit()
 
     collab_server = server.Server(main)
@@ -1478,7 +1478,7 @@ if __name__ == '__main__':
             try:
                 start_collabloration_server(empireMenu)
             except Exception as e:
-                print "Error starting collaboration server: {}".format(str(e))
+                print("Error starting collaboration server: {}".format(str(e)))
         
         thread = helpers.KThread(target=thread_server, args=(main,))
         thread.daemon = True

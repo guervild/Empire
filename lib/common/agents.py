@@ -74,8 +74,7 @@ from . import helpers
 from . import packets
 from . import messages
 from . import events
-
-from files import fetcher
+from . import files
 
 class Agents(object):
     """

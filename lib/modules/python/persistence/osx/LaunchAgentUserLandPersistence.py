@@ -145,8 +145,6 @@ print "\\n[+] Persistence has been installed: /Library/LaunchAgents/%s"
 
 """ % (PLISTName,plistSettings,PLISTName)
 
-=======
-import base64
 class Module:
 
     def __init__(self, mainMenu, params=[]):

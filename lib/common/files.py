@@ -4,9 +4,10 @@ get_file()                 - Get the contents of a file/screenshot specified by 
 get_files_by_type()        - Return all file downloads with ID, Path, file_type, and Timestamp
 """
 
-import helpers 
+from . import helpers
+from . import events
+
 import os 
-import events 
 import base64
 import threading
 
