@@ -15,7 +15,7 @@ from . import stagers
 from . import credentials
 from . import plugins
 from . import users
-from . import files
+from .files import fetcher
 from . import events
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
