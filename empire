@@ -3,7 +3,9 @@
 from __future__ import print_function
 import sqlite3, argparse, sys, argparse, logging, json, string, subprocess
 import os, re, time, signal, copy, base64, pickle, random
-from flask import Flask, request, jsonify, make_response, abort, url_for
+from flask import Flask, request, jsonify, make_response, abort, url_for, render_template
+from flask_socketio import SocketIO, join_room, leave_room, disconnect, send, emit
+from flask_login import current_user, login_manager, login_required, login_user, logout_user, UserMixin, LoginManager
 from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
@@ -11,7 +13,7 @@ import ssl
 import ast
 
 # Empire imports
-from lib.common import empire, helpers
+from lib.common import empire, helpers, server
 
 # if running in python 2.7 set global utf8 encoding otherwise python 3 is already UTF-8 by default
 if sys.version[0] == '2':
@@ -161,7 +163,18 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
 #    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
 #
-####################################################################
+
+
+def start_collabloration_server(main):
+    """
+    Start the collab/team server
+    """
+    if args == None:
+        print helpers.color("[!] Error starting team server")
+        sys.exit()
+
+    collab_server = server.Server(main)
+    collab_server.start_server()
 
 def start_restful_api(empireMenu, suppress=False, username=None, password=None, port=1337):
     """
@@ -234,6 +247,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if (token != apiToken) and (token != permanentApiToken):
                 return make_response('', 401)
 
+
+    
     @app.after_request
     def add_cors(response):
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -1311,6 +1326,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
+
     if not os.path.exists('./data/empire-chain.pem'):
         print("[!] Error: cannot find certificate ./data/empire-chain.pem")
         sys.exit()
@@ -1393,6 +1409,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
 
 
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -1408,12 +1426,16 @@ if __name__ == '__main__':
     cliGroup.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
 
     restGroup = parser.add_argument_group('RESTful API Options')
+    serverGroup = parser.add_argument_group('Server Options')
     launchGroup = restGroup.add_mutually_exclusive_group()
     launchGroup.add_argument('--rest', action='store_true', help='Run Empire and the RESTful API.')
     launchGroup.add_argument('--headless', action='store_true', help='Run Empire and the RESTful API headless without the usual interface.')
+    launchGroup.add_argument('--server', action='store_true', help='Run Empire in headless server mode. Connect and interact with the server using the socketIO client')
     restGroup.add_argument('--restport', type=int, nargs=1, help='Port to run the Empire RESTful API on.')
     restGroup.add_argument('--username', nargs=1, help='Start the RESTful API with the specified username instead of pulling from empire.db')
     restGroup.add_argument('--password', nargs=1, help='Start the RESTful API with the specified password instead of pulling from empire.db')
+    serverGroup.add_argument('--shared_password', help='Use the specified password for Empire server mode.')
+    serverGroup.add_argument('--port', help='Use the specified port for the server.')
 
     args = parser.parse_args()
     database_check_docker()
@@ -1445,12 +1467,24 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-
         try:
             start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
         except SystemExit as e:
             pass
-
+    elif args.server:
+        # Start an empire instance in server mode. Supress output.launchGroup
+        main = empire.MainMenu(args=args)
+        def thread_server(empireMenu):
+            try:
+                start_collabloration_server(empireMenu)
+            except Exception as e:
+                print "Error starting collaboration server: {}".format(str(e))
+        
+        thread = helpers.KThread(target=thread_server, args=(main,))
+        thread.daemon = True
+        thread.start()
+        sleep(5)
+        main.cmdloop()
     else:
         # normal execution
         main = empire.MainMenu(args=args)

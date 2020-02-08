@@ -4,6 +4,8 @@ setuptools
 iptools
 pydispatcher
 flask
+flask_socketio
+flask_login
 macholib
 dropbox
 pyOpenSSL
@@ -18,3 +20,5 @@ xlutils
 pycrypto
 pefile
 simplejson
+gevent
+gevent-websocket

@@ -35,6 +35,7 @@ import threading
 import json
 
 # Empire imports
+<<<<<<< HEAD
 from . import helpers
 from . import messages
 from . import agents
@@ -44,6 +45,18 @@ from . import stagers
 from . import credentials
 from . import plugins
 from .events import log_event
+=======
+import helpers
+import messages
+import agents
+import listeners
+import modules
+import stagers
+import credentials
+import plugins
+from files import fetcher
+from events import log_event
+>>>>>>> 883ee661d1bbc72920102054e8bba00515bff9e0
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
