@@ -153,6 +153,7 @@ c.execute( '''CREATE TABLE "taskings" (
     "id" integer,
     "data" text,
     "agent" text,
+    "username" text,
     PRIMARY KEY(id, agent)
 )''')
 
@@ -173,6 +174,14 @@ c.execute('''CREATE TABLE "reporting" (
     "taskID" integer,
     FOREIGN KEY(taskID) REFERENCES results(id)
 )''')
+
+# event_types -> checkin, task, result, rename
+c.execute('''CREATE TABLE "users" (
+    "id" integer PRIMARY KEY,
+    "username" text,
+    "lastlogon_time" text
+)''')
+
 
 # commit the changes and close everything off
 conn.commit()
