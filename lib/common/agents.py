@@ -1057,12 +1057,11 @@ class Agents(object):
     #
     ###############################################################
 
-    def add_agent_task_db(self, sessionID, taskName, task=''):
+    def add_agent_task_db(self, sessionID, taskName, task='',user_Name=None):
         """
         Add a task to the specified agent's buffer in the database.
         """
         agentName = sessionID
-
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(sessionID)
         if nameid:
@@ -1096,7 +1095,7 @@ class Agents(object):
                     if pk is None:
                         pk = 0
                     pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO taskings (id, agent, data) VALUES(?, ?, ?)", [pk, sessionID, task[:100]])
+                    cur.execute("INSERT INTO taskings (id, agent, data, username) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], user_Name])
 
                     # append our new json-ified task and update the backend
                     agent_tasks.append([taskName, task, pk])
