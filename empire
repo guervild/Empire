@@ -1324,11 +1324,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if option == "Name":
                 user_Name = values
 
-        message = u.add_new_user(user_Name)
-        if message == True:
-            return jsonify({'Name': user_Name})
-        else:
-            return jsonify({'Error': 'Username already exists'})
+        u.add_new_user(user_Name)
+        return jsonify({'Name': user_Name})
 
 
     if not os.path.exists('./data/empire-chain.pem'):

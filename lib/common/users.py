@@ -45,16 +45,15 @@ class Users():
             if not found:
                 cur.execute("INSERT INTO users (username, lastlogon_time) VALUES (?,?)",
                             (user_Name, lastlogon))
-                # dispatch the event
-                signal = json.dumps({
-                    'print': True,
-                    'message': "{} connected".format(user_Name)
-                })
-                dispatcher.send(signal, sender="Users")
-                message = True
             else:
-                message = False
-            cur.close()
+                cur.execute("UPDATE users SET lastlogon_time = ? WHERE username = ?",
+                            (lastlogon, user_Name))
         finally:
+            cur.close()
             self.lock.release()
-            return message
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "{} connected".format(user_Name)
+            })
+            dispatcher.send(signal, sender="Users")
