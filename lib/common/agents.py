@@ -74,6 +74,7 @@ from . import helpers
 from . import packets
 from . import messages
 from . import events
+from . import users
 
 
 class Agents(object):

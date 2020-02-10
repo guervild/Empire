@@ -2016,8 +2016,6 @@ class PowerShellAgentMenu(SubMenu):
         "Task an agent to 'sleep interval [jitter]'"
         
         parts = line.strip().split(' ')
-
-        user_Name = 'dredg'
         if len(parts) > 0 and parts[0] != "":
             delay = parts[0]
             jitter = 0.0
