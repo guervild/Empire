@@ -43,6 +43,7 @@ from . import modules
 from . import stagers
 from . import credentials
 from . import plugins
+from . import users
 from .events import log_event
 from zlib_wrapper import compress
 from zlib_wrapper import decompress

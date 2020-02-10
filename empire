@@ -11,7 +11,7 @@ import ssl
 import ast
 
 # Empire imports
-from lib.common import empire, helpers
+from lib.common import empire, helpers, users
 
 # if running in python 2.7 set global utf8 encoding otherwise python 3 is already UTF-8 by default
 if sys.version[0] == '2':
@@ -1314,24 +1314,18 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     @app.route('/api/user/add', methods=['POST'])
     def get_user():
         global user_Name
+        u = users.Users(main)
         for option, values in request.json.items():
             if isinstance(values, bytes):
                 values = values.decode('UTF-8')
             if option == "Name":
                 user_Name = values
 
-        lastlogon = helpers.get_datetime()
-
-        cur = conn.cursor()
-        cur.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1",(user_Name,))
-        found = cur.fetchone()
-        if found:
-            return jsonify({'Username already exists'})
+        message = u.add_new_user(user_Name)
+        if message == True:
+            return jsonify({'Name': user_Name})
         else:
-            cur.execute("INSERT INTO users (username, lastlogon_time) VALUES (?,?)",
-                    (user_Name, lastlogon))
-        cur.close()
-        return jsonify({'Name': user_Name})
+            return jsonify({'Error': 'Username already exists'})
 
 
     if not os.path.exists('./data/empire-chain.pem'):
