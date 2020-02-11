@@ -46,7 +46,7 @@ IP_BLACKLIST = ""
 
 # default credentials used to log into the RESTful API
 API_USERNAME = "empireadmin"
-API_PASSWORD = ''.join(random.sample(string.ascii_letters + string.digits + punctuation, 32))
+API_PASSWORD = "password123"
 
 # the 'permanent' API token (doesn't change)
 API_PERMANENT_TOKEN = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
@@ -179,9 +179,12 @@ c.execute('''CREATE TABLE "reporting" (
 c.execute('''CREATE TABLE "users" (
     "id" integer PRIMARY KEY,
     "username" text,
-    "lastlogon_time" text
+    "password" text,
+    "api_current_token" text,
+    "last_logon_time" text
 )''')
 
+c.execute("INSERT INTO users VALUES (?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, API_PERMANENT_TOKEN, ""))
 
 # commit the changes and close everything off
 conn.commit()

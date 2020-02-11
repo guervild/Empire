@@ -3,7 +3,7 @@
 from __future__ import print_function
 import sqlite3, argparse, sys, argparse, logging, json, string, subprocess
 import os, re, time, signal, copy, base64, pickle, random
-from flask import Flask, request, jsonify, make_response, abort, url_for
+from flask import Flask, request, jsonify, make_response, abort, url_for, g
 from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
@@ -180,6 +180,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     main = empireMenu
 
+    u = users.Users(main)
+
     global serverExitCommand
 
     # if a username/password were not supplied, use the creds stored in the db
@@ -229,9 +231,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         if request.path != '/api/admin/login':
             token = request.args.get('token')
-            if (not token) or (not tokenAllowed.match(token)):
-                return make_response('', 401)
-            if (token != apiToken) and (token != permanentApiToken):
+            user = u.get_user_from_token(token)
+            if user:
+                g.user = user
+            else:
                 return make_response('', 401)
 
     @app.after_request
@@ -1280,9 +1283,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         # try to prevent some basic bruting
         time.sleep(2)
+        token = u.user_login(suppliedUsername, suppliedPassword)
 
-        if suppliedUsername == username and suppliedPassword == password:
-            return jsonify({'token': apiToken})
+        if token:
+            return jsonify({'token': token})
         else:
             return make_response('', 401)
 
@@ -1315,17 +1319,17 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
 
     @app.route('/api/user/add', methods=['POST'])
-    def get_user():
-        global user_Name
-        u = users.Users(main)
+    def create_user():
         for option, values in request.json.items():
             if isinstance(values, bytes):
                 values = values.decode('UTF-8')
-            if option == "Name":
-                user_Name = values
+            if option == "username":
+                user_name = values
+            if option == "password":
+                password = values
 
-        u.add_new_user(user_Name)
-        return jsonify({'Name': user_Name})
+        u.add_new_user(user_name, password)
+        return jsonify({'username': user_name, 'username': password})
 
 
     if not os.path.exists('./data/empire-chain.pem'):
