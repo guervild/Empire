@@ -1,13 +1,10 @@
-import sys
-import base64
-import sqlite3
-import datetime
 import threading
 import string
 import random
 from . import helpers
 import json
 from pydispatch import dispatcher
+
 
 class Users():
     # This is a demo class for handling users
@@ -23,7 +20,6 @@ class Users():
 
         self.users = {}
 
-
     def get_db_connection(self):
         """
         Returns a handle to the DB
@@ -32,7 +28,6 @@ class Users():
         self.mainMenu.conn.row_factory = None
         self.lock.release()
         return self.mainMenu.conn
-
 
     def add_new_user(self, user_Name, password):
         """
@@ -83,7 +78,6 @@ class Users():
             cur.close()
             self.lock.release()
 
-
     def user_login(self, user_name, password):
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
@@ -110,7 +104,6 @@ class Users():
             cur.close()
             self.lock.release()
 
-
     def get_user_from_token(self, token):
         conn = self.get_db_connection()
 
@@ -125,7 +118,6 @@ class Users():
             cur.close()
             self.lock.release()
 
-
     def refresh_api_token(self):
         """
         Generates a randomized RESTful API token and updates the value
@@ -136,7 +128,6 @@ class Users():
         apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
         return apiToken
-
 
     def update_last_logon(self, token):
         """

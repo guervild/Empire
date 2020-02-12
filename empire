@@ -1320,6 +1320,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     @app.route('/api/user/add', methods=['POST'])
     def create_user():
+        if not request.json or not 'username' in request.json or not 'password' in request.json:
+            abort(400)
+
         for option, values in request.json.items():
             if option == "username":
                 user_name = values
@@ -1332,6 +1335,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     @app.route('/api/user/delete', methods=['POST'])
     def delete_user():
+        if not request.json or not 'username' in request.json:
+            abort(400)
+
         for option, values in request.json.items():
             if option == "username":
                 user_name = values
@@ -1342,6 +1348,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     @app.route('/api/user/updatepassword', methods=['POST'])
     def update_user_password():
+        if not request.json or not 'username' in request.json or not 'password' in request.json:
+            abort(400)
+            
         for option, values in request.json.items():
             if option == "username":
                 user_name = values
