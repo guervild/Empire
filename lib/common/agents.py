@@ -1103,9 +1103,9 @@ class Agents(object):
                     cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agent_tasks), sessionID])
 
                     # update last seen time for user
-                    lastlogon = helpers.get_datetime()
-                    cur.execute("UPDATE users SET lastlogon_time = ? WHERE username = ?",
-                                (lastlogon, user_Name))
+                    last_logon = helpers.get_datetime()
+                    cur.execute("UPDATE users SET last_logon_time = ? WHERE username = ?",
+                                (last_logon, user_Name))
 
                     # dispatch this event
                     message = "[*] Agent {} tasked with task ID {}".format(sessionID, pk)

@@ -49,22 +49,39 @@ class Users():
             if not found:
                 cur.execute("INSERT INTO users (username, password, last_logon_time) VALUES (?,?,?)",
                             (user_Name, password, last_logon))
-            #TODO: Add token generation for new user
 
+                # dispatch the event
+                signal = json.dumps({
+                    'print': True,
+                    'message': "Added {} to Users".format(user_Name)
+                })
+                dispatcher.send(signal, sender="Users")
 
-            #TODO: extract update to its own function
-            else:
-                cur.execute("UPDATE users SET last_logon_time = ? WHERE username = ?",
-                            (last_logon, user_Name))
         finally:
             cur.close()
             self.lock.release()
+
+    def delete_user(self, user_name):
+        """
+        Delete user from cache
+        """
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("DELETE FROM users WHERE username = ? LIMIT 1", (user_name,))
+
             # dispatch the event
             signal = json.dumps({
                 'print': True,
-                'message': "{} connected".format(user_Name)
+                'message': "Deleted {} from Users".format(user_name)
             })
             dispatcher.send(signal, sender="Users")
+
+        finally:
+            cur.close()
+            self.lock.release()
 
 
     def user_login(self, user_name, password):
@@ -78,7 +95,6 @@ class Users():
             found = cur.fetchone()
             if not found:
                 return None
-            # TODO: extract update to its own function
             else:
                 token = self.refresh_api_token()
                 cur.execute("UPDATE users SET last_logon_time = ?, api_current_token = ? WHERE username = ?",
@@ -120,3 +136,44 @@ class Users():
         apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
         return apiToken
+
+
+    def update_last_logon(self, token):
+        """
+        Update the last logon timestamp for a user
+        """
+        last_logon = helpers.get_datetime()
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+
+            cur.execute("UPDATE users SET last_logon_time=? WHERE api_current_token=?", (last_logon, token))
+
+        finally:
+            cur.close()
+            self.lock.release()
+
+    def update_password(self, user_name, password):
+        """
+        Update the last logon timestamp for a user
+        """
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+
+            cur.execute("UPDATE users SET password=? WHERE username=?", (password, user_name))
+
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "Updated password for {}".format(user_name)
+            })
+            dispatcher.send(signal, sender="Users")
+
+        finally:
+            cur.close()
+            self.lock.release()
