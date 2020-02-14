@@ -1058,7 +1058,7 @@ class Agents(object):
     #
     ###############################################################
 
-    def add_agent_task_db(self, sessionID, taskName, task='',user_Name=None):
+    def add_agent_task_db(self, sessionID, taskName, task='',uid=None):
         """
         Add a task to the specified agent's buffer in the database.
         """
@@ -1096,7 +1096,7 @@ class Agents(object):
                     if pk is None:
                         pk = 0
                     pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO taskings (id, agent, data, username) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], user_Name])
+                    cur.execute("INSERT INTO taskings (id, agent, data, unique_id) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], uid])
 
                     # append our new json-ified task and update the backend
                     agent_tasks.append([taskName, task, pk])
@@ -1104,8 +1104,8 @@ class Agents(object):
 
                     # update last seen time for user
                     last_logon = helpers.get_datetime()
-                    cur.execute("UPDATE users SET last_logon_time = ? WHERE username = ?",
-                                (last_logon, user_Name))
+                    cur.execute("UPDATE users SET last_logon_time = ? WHERE unique_id = ?",
+                                (last_logon, uid))
 
                     # dispatch this event
                     message = "[*] Agent {} tasked with task ID {}".format(sessionID, pk)
