@@ -1098,6 +1098,14 @@ class Agents(object):
                     pk = (pk + 1) % 65536
                     cur.execute("INSERT INTO taskings (id, agent, data, unique_id) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], uid])
 
+                    # Create result for data when it arrives
+                    pk = cur.execute("SELECT max(id) FROM results WHERE agent=?", [sessionID]).fetchone()[0]
+                    if pk is None:
+                        pk = 0
+                    # only 2 bytes for the task ID, so wraparound
+                    pk = (pk + 1) % 65536
+                    cur.execute("INSERT INTO results (id, agent, unique_id) VALUES (?,?,?)", (pk, sessionID, uid))
+
                     # append our new json-ified task and update the backend
                     agent_tasks.append([taskName, task, pk])
                     cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agent_tasks), sessionID])
@@ -1726,20 +1734,15 @@ class Agents(object):
 
             # insert task results into the database, if it's not a file
             if taskID != 0 and responseName not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE", "TASK_CMD_WAIT_SAVE"] and data != None:
-                # if the taskID does not exist for this agent, create it
-                if cur.execute("SELECT * FROM results WHERE id=? AND agent=?", [taskID, sessionID]).fetchone() is None:
-                    pk = cur.execute("SELECT max(id) FROM results WHERE agent=?", [sessionID]).fetchone()[0]
-                    if pk is None:
-                        pk = 0
-                    # only 2 bytes for the task ID, so wraparound
-                    pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO results (id, agent, data) VALUES (?,?,?)",(pk, sessionID, data))
-                else:
-                    try:
-                        keyLogTaskID = cur.execute("SELECT id FROM taskings WHERE agent=? AND data LIKE \"function Get-Keystrokes%\"", [sessionID]).fetchone()[0]
-                    except Exception as e:
-                        pass
-                    cur.execute("UPDATE results SET data=data||? WHERE id=? AND agent=?", [data, taskID, sessionID])
+                # Update result with data
+                cur.execute("UPDATE results SET data=? WHERE id=?",(data, taskID))
+
+            else:
+                try:
+                    keyLogTaskID = cur.execute("SELECT id FROM taskings WHERE agent=? AND data LIKE \"function Get-Keystrokes%\"", [sessionID]).fetchone()[0]
+                except Exception as e:
+                    pass
+                cur.execute("UPDATE results SET data=data||? WHERE id=? AND agent=?", [data, taskID, sessionID])
 
         finally:
             cur.close()
