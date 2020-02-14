@@ -234,8 +234,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             token = request.args.get('token')
             user = u.get_user_from_token(token)
             if user:
+                #TODO: Have g.user be an object and not have to call g.user[1] for username
                 g.user = user
-
             else:
                 return make_response('', 401)
 
@@ -1333,7 +1333,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name, 'password': password})
 
 
-    @app.route('/api/user/delete', methods=['POST'])
+    @app.route('/api/user/disable', methods=['POST'])
     def delete_user():
         if not request.json or not 'username' in request.json:
             abort(400)
@@ -1342,7 +1342,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if option == "username":
                 user_name = values
 
-        u.delete_user(user_name)
+        u.disable_user(user_name)
         return jsonify({'username': user_name})
 
 
@@ -1350,7 +1350,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     def update_user_password():
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
-            
+
         for option, values in request.json.items():
             if option == "username":
                 user_name = values

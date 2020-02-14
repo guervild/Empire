@@ -35,6 +35,7 @@ class Users():
         """
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
+        enabled = 1
 
         try:
             self.lock.acquire()
@@ -42,8 +43,9 @@ class Users():
             cur.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1", (user_Name,))
             found = cur.fetchone()
             if not found:
-                cur.execute("INSERT INTO users (username, password, last_logon_time) VALUES (?,?,?)",
-                            (user_Name, password, last_logon))
+                uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
+                cur.execute("INSERT INTO users (username, password, last_logon_time, unique_id,enabled) VALUES (?,?,?,?,?)",
+                            (user_Name, password, last_logon,uid,enabled))
 
                 # dispatch the event
                 signal = json.dumps({
@@ -56,21 +58,22 @@ class Users():
             cur.close()
             self.lock.release()
 
-    def delete_user(self, user_name):
+    def disable_user(self, user_name):
         """
         Delete user from cache
         """
         conn = self.get_db_connection()
+        enabled = 0
 
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("DELETE FROM users WHERE username = ? LIMIT 1", (user_name,))
-
-            # dispatch the event
+            cur.execute("UPDATE users SET enabled = ? WHERE username = ?",
+                        (enabled, user_name))
+                        # dispatch the event
             signal = json.dumps({
                 'print': True,
-                'message': "Deleted {} from Users".format(user_name)
+                'message': "Disabled {} from Users".format(user_name)
             })
             dispatcher.send(signal, sender="Users")
 
@@ -85,11 +88,12 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT 1 FROM users WHERE username = ? AND password = ? LIMIT 1", (user_name, password))
-            found = cur.fetchone()
-            if not found:
-                return None
-            else:
+            cur.execute("SELECT enabled FROM users WHERE username = ? AND password = ? LIMIT 1"
+                        , (user_name, password))
+            enabled = cur.fetchone()
+            enabled = int(''.join(map(str, enabled)))
+
+            if enabled == 1:
                 token = self.refresh_api_token()
                 cur.execute("UPDATE users SET last_logon_time = ?, api_current_token = ? WHERE username = ?",
                             (last_logon, token, user_name))
@@ -100,6 +104,8 @@ class Users():
                 })
                 dispatcher.send(signal, sender="Users")
                 return token
+            else:
+                return None
         finally:
             cur.close()
             self.lock.release()

@@ -51,6 +51,9 @@ API_PASSWORD = "password123"
 # the 'permanent' API token (doesn't change)
 API_PERMANENT_TOKEN = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
+# create unique id for admin
+uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
+
 # default obfuscation setting
 OBFUSCATE = 0
 
@@ -149,18 +152,20 @@ c.execute('''CREATE TABLE "credentials" (
     "notes" text
     )''')
 
-c.execute( '''CREATE TABLE "taskings" (
+c.execute('''CREATE TABLE "taskings" (
     "id" integer,
     "data" text,
     "agent" text,
     "username" text,
+    "unique_id" text,
     PRIMARY KEY(id, agent)
 )''')
 
-c.execute( '''CREATE TABLE "results" (
+c.execute('''CREATE TABLE "results" (
     "id" integer,
     "data" text,
     "agent" text,
+    "unique_id" text,
     PRIMARY KEY(id, agent)
 )''')
 
@@ -181,10 +186,12 @@ c.execute('''CREATE TABLE "users" (
     "username" text,
     "password" text,
     "api_current_token" text,
-    "last_logon_time" text
+    "last_logon_time" text,
+    "unique_id" text,
+    "enabled" integer
 )''')
 
-c.execute("INSERT INTO users VALUES (?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, API_PERMANENT_TOKEN, ""))
+c.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, API_PERMANENT_TOKEN, "", uid, "1"))
 
 # commit the changes and close everything off
 conn.commit()
