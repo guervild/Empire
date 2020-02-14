@@ -1099,11 +1099,6 @@ class Agents(object):
                     cur.execute("INSERT INTO taskings (id, agent, data, unique_id) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], uid])
 
                     # Create result for data when it arrives
-                    pk = cur.execute("SELECT max(id) FROM results WHERE agent=?", [sessionID]).fetchone()[0]
-                    if pk is None:
-                        pk = 0
-                    # only 2 bytes for the task ID, so wraparound
-                    pk = (pk + 1) % 65536
                     cur.execute("INSERT INTO results (id, agent, unique_id) VALUES (?,?,?)", (pk, sessionID, uid))
 
                     # append our new json-ified task and update the backend
