@@ -81,6 +81,31 @@ class Users():
             cur.close()
             self.lock.release()
 
+
+    def enable_user(self, user_name):
+        """
+        Enable user from cache
+        """
+        conn = self.get_db_connection()
+        enabled = 1
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET enabled = ? WHERE username = ?",
+                        (enabled, user_name))
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "Enabled {} from Users".format(user_name)
+            })
+            dispatcher.send(signal, sender="Users")
+
+        finally:
+            cur.close()
+            self.lock.release()
+
+
     def user_login(self, user_name, password):
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()

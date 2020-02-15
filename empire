@@ -1333,6 +1333,19 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name, 'password': password})
 
 
+    @app.route('/api/user/enable', methods=['POST'])
+    def enable_user():
+        if not request.json or not 'username' in request.json:
+            abort(400)
+
+        for option, values in request.json.items():
+            if option == "username":
+                user_name = values
+
+        u.enable_user(user_name)
+        return jsonify({'username': user_name})
+
+
     @app.route('/api/user/disable', methods=['POST'])
     def delete_user():
         if not request.json or not 'username' in request.json:
