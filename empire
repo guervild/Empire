@@ -1318,6 +1318,24 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
+    @app.route('/api/user', methods=['GET'])
+    def get_users():
+        """
+        Returns JSON of the users from the backend database.
+        """
+        reportingRaw = execute_db_query(conn, 'SELECT ID, username, last_logon_time, unique_id, enabled FROM users')
+        reporting_users = []
+        user_report = []
+
+        for reporting_users in reportingRaw:
+            [ID, username, last_logon_time, unique_id, enabled] = reporting_users
+            data = {"ID": ID, "Username": username, "Last Logon Time": last_logon_time, "UID": unique_id,
+                 "Enabled": enabled}
+            user_report.append(data)
+
+        return jsonify({'User Report': user_report})
+
+
     @app.route('/api/user/add', methods=['POST'])
     def create_user():
         if not request.json or not 'username' in request.json or not 'password' in request.json:
