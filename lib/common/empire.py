@@ -48,9 +48,6 @@ from .events import log_event
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
-global user_Name
-user_Name = '';
-
 # custom exceptions used for nested menu navigation
 class NavMain(Exception):
     """
@@ -2026,7 +2023,7 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.set_agent_field_db("delay", delay, self.sessionID)
             self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
             
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-Delay " + str(delay) + ' ' + str(jitter), user_Name=user_Name)
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-Delay " + str(delay) + ' ' + str(jitter))
             
             # dispatch this event
             message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
