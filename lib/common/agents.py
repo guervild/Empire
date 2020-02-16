@@ -1065,6 +1065,8 @@ class Agents(object):
         agentName = sessionID
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(sessionID)
+        timestamp = helpers.get_datetime()
+
         if nameid:
             sessionID = nameid
 
@@ -1096,7 +1098,7 @@ class Agents(object):
                     if pk is None:
                         pk = 0
                     pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO taskings (id, agent, data, unique_id) VALUES(?, ?, ?, ?)", [pk, sessionID, task[:100], uid])
+                    cur.execute("INSERT INTO taskings (id, agent, data, unique_id, time_stamp) VALUES(?, ?, ?, ?, ?)", [pk, sessionID, task[:100], uid, timestamp])
 
                     # Create result for data when it arrives
                     cur.execute("INSERT INTO results (id, agent, unique_id) VALUES (?,?,?)", (pk, sessionID, uid))
