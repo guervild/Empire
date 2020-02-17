@@ -309,7 +309,7 @@ def process_packet(packetType, data, resultID):
                  encodedPart = c.build_header(comp_data, start_crc32)
                  encodedPart = base64.b64encode(encodedPart)
 
-                 partData = "%s|%s|%s" %(partIndex, filePath, encodedPart)
+                 partData = "%s|%s|%s|%s" %(partIndex, filePath, encodedPart)
                  if not encodedPart or encodedPart == '' or len(encodedPart) == 16:
                      break
 
