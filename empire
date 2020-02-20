@@ -1318,7 +1318,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
-    @app.route('/api/user', methods=['GET'])
+    @app.route('/api/users', methods=['GET'])
     def get_users():
         """
         Returns JSON of the users from the backend database.
@@ -1336,7 +1336,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'User Report': user_report})
 
 
-    @app.route('/api/user/add', methods=['POST'])
+    @app.route('/api/users/add', methods=['POST'])
     def create_user():
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
@@ -1351,7 +1351,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name, 'password': password})
 
 
-    @app.route('/api/user/enable', methods=['POST'])
+    @app.route('/api/users/enable', methods=['POST'])
     def enable_user():
         if not request.json or not 'username' in request.json:
             abort(400)
@@ -1364,7 +1364,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name})
 
 
-    @app.route('/api/user/disable', methods=['POST'])
+    @app.route('/api/users/disable', methods=['POST'])
     def delete_user():
         if not request.json or not 'username' in request.json:
             abort(400)
@@ -1377,7 +1377,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name})
 
 
-    @app.route('/api/user/updatepassword', methods=['POST'])
+    @app.route('/api/users/updatepassword', methods=['POST'])
     def update_user_password():
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
