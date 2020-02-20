@@ -1373,8 +1373,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if option == "username":
                 user_name = values
 
-        u.disable_user(user_name)
-        return jsonify({'username': user_name})
+        status = u.disable_user(user_name)
+        return jsonify({'success': status})
 
 
     @app.route('/api/users/updatepassword', methods=['POST'])
