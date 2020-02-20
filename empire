@@ -1377,7 +1377,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': status})
 
 
-    @app.route('/api/users/updatepassword', methods=['POST'])
+    @app.route('/api/users/updatepassword', methods=['PUT'])
     def update_user_password():
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
@@ -1388,8 +1388,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if option == "password":
                 password = values
 
-        u.update_password(user_name,password)
-        return jsonify({'password': password})
+        status = u.update_password(user_name,password)
+        return jsonify({'success': status})
 
 
     if not os.path.exists('./data/empire-chain.pem'):

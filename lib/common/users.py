@@ -199,7 +199,7 @@ class Users():
         Update the last logon timestamp for a user
         """
         conn = self.get_db_connection()
-
+        #TODO: add handling for updating password of non-existing users
         try:
             self.lock.acquire()
             cur = conn.cursor()
@@ -216,3 +216,4 @@ class Users():
         finally:
             cur.close()
             self.lock.release()
+            return True
