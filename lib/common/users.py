@@ -53,10 +53,14 @@ class Users():
                     'message': "Added {} to Users".format(user_Name)
                 })
                 dispatcher.send(signal, sender="Users")
+                message = True
+            else:
+                message = False
 
         finally:
             cur.close()
             self.lock.release()
+            return message
 
     def disable_user(self, user_name):
         """

@@ -1347,8 +1347,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if option == "password":
                 password = values
 
-        u.add_new_user(user_name, password)
-        return jsonify({'username': user_name, 'password': password})
+        status = u.add_new_user(user_name, password)
+        return jsonify({'success': status})
 
 
     @app.route('/api/users/enable', methods=['POST'])
