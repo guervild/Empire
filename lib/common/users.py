@@ -72,30 +72,35 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT 1 FROM users WHERE username = ? and id = '1' LIMIT 1", (user_name,))
+            cur.execute("SELECT 1 FROM users WHERE username = ? AND id = '1' LIMIT 1", (user_name,))
             found = cur.fetchone()
             if found:
                 signal = json.dumps({
                     'print': True,
                     'message': "Cannot disable admin: {}".format(user_name)
                 })
-                dispatcher.send(signal, sender="Users")
                 message = False
             else:
-                #TODO: Add switch to catch already disabled users or non-existing users
-                cur.execute("UPDATE users SET enabled = ? WHERE username = ? AND id != '1'",
-                            (enabled, user_name))
-                            # dispatch the event
-                signal = json.dumps({
-                    'print': True,
-                    'message': "Disabled {} from Users".format(user_name)
-                })
-                dispatcher.send(signal, sender="Users")
-                message = True
-
+                cur.execute("SELECT 1 FROM users WHERE username = ? AND enabled = '1'", (user_name,))
+                found = cur.fetchone()
+                if found:
+                    cur.execute("UPDATE users SET enabled = ? WHERE username = ? AND id != '1'",
+                                (enabled, user_name))
+                    signal = json.dumps({
+                        'print': True,
+                        'message': "Disabled {} from Users".format(user_name)
+                    })
+                    message = True
+                else:
+                    signal = json.dumps({
+                        'print': True,
+                        'message': "User {} already disabled".format(user_name)
+                    })
+                    message = False
         finally:
             cur.close()
             self.lock.release()
+            dispatcher.send(signal, sender="Users")
             return message
 
 
