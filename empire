@@ -188,31 +188,21 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     (dbUsername, dbPassword) = execute_db_query(conn, "SELECT api_username, api_password FROM config")[0]
 
-    if not username:
-        username = dbUsername
-    else:
+    if username:
         execute_db_query(conn, "UPDATE config SET api_username=?", username)
-        username = username[0]
+        execute_db_query(conn, "UPDATE users SET username=? WHERE id='1'", username)
 
-    if not password:
-        password = dbPassword
-    else:
+    if password:
         execute_db_query(conn, "UPDATE config SET api_password=?", password)
-        password = password[0]
+        execute_db_query(conn, "UPDATE users SET password=? WHERE id='1'", password)
 
 
     print('')
-
-
-
     print(" * Starting Empire RESTful API on port: %s" %(port))
 
     # refresh the token for the RESTful API
     apiToken = refresh_api_token(conn)
     print(" * RESTful API token: %s" %(apiToken))
-
-    permanentApiToken = get_permanent_token(conn)
-    tokenAllowed = re.compile("^[0-9a-z]{40}")
 
     oldStdout = sys.stdout
     if suppress:
