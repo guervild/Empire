@@ -48,9 +48,6 @@ IP_BLACKLIST = ""
 API_USERNAME = "empireadmin"
 API_PASSWORD = "password123"
 
-# the 'permanent' API token (doesn't change)
-API_PERMANENT_TOKEN = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
-
 # create unique id for admin
 uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
@@ -84,13 +81,12 @@ c.execute('''CREATE TABLE config (
     "api_username" text,
     "api_password" text,
     "api_current_token" text,
-    "api_permanent_token" text,
     "obfuscate" integer,
     "obfuscate_command" text
     )''')
 
 # kick off the config component of the database
-c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY, INSTALL_PATH, IP_WHITELIST, IP_BLACKLIST, '', '', False, API_USERNAME, API_PASSWORD, '', API_PERMANENT_TOKEN, OBFUSCATE, OBFUSCATE_COMMAND))
+c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY, INSTALL_PATH, IP_WHITELIST, IP_BLACKLIST, '', '', False, API_USERNAME, API_PASSWORD, '', OBFUSCATE, OBFUSCATE_COMMAND))
 
 c.execute('''CREATE TABLE "agents" (
     "id" integer PRIMARY KEY,
@@ -191,7 +187,7 @@ c.execute('''CREATE TABLE "users" (
     "enabled" integer
 )''')
 
-c.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, API_PERMANENT_TOKEN, "", uid, "1"))
+c.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, "", "", uid, "1"))
 
 # commit the changes and close everything off
 conn.commit()

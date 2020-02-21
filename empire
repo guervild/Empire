@@ -85,24 +85,7 @@ def refresh_api_token(conn):
 
     return apiToken
 
-
-def get_permanent_token(conn):
-    """
-    Returns the permanent API token stored in empire.db.
-
-    If one doesn't exist, it will generate one and store it before returning.
-    """
-
-    permanentToken = execute_db_query(conn, "SELECT api_permanent_token FROM config")[0]
-    permanentToken = permanentToken[0]
-    if not permanentToken:
-        rng = random.SystemRandom()
-        permanentToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
-        execute_db_query(conn, "UPDATE config SET api_permanent_token=?", [permanentToken])
-
-    return permanentToken
-
-
+#TODO: Update with new commads
 ####################################################################
 #
 # The Empire RESTful API.
@@ -157,7 +140,6 @@ def get_permanent_token(conn):
 #    POST     http://localhost:1337/api/creds                add creds to the database
 #
 #    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
-#    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
 #    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
 #
@@ -289,10 +271,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Returns JSON of the current Empire config.
         """
-        configRaw = execute_db_query(conn, 'SELECT staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token FROM config')
+        configRaw = execute_db_query(conn, 'SELECT staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token FROM config')
 
-        [staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token] = configRaw[0]
-        config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "permanent_api_token":api_permanent_token, "staging_key":staging_key, "version":empire.VERSION}]
+        [staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token] = configRaw[0]
+        config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "staging_key":staging_key, "version":empire.VERSION}]
 
         return jsonify({'config': config})
 
@@ -1279,15 +1261,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             return jsonify({'token': token})
         else:
             return make_response('', 401)
-
-
-    @app.route('/api/admin/permanenttoken', methods=['GET'])
-    def get_server_perm_token():
-        """
-        Returns the 'permanent' API token for the server.
-        """
-        permanentToken = get_permanent_token(conn)
-        return jsonify({'token': permanentToken})
 
 
     @app.route('/api/admin/restart', methods=['GET', 'POST', 'PUT'])
