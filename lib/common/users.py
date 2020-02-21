@@ -163,13 +163,29 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT * FROM users WHERE api_current_token = ? LIMIT 1", (token,))
-            found = cur.fetchone()
-            return found
+            cur.execute("SELECT username FROM users WHERE api_current_token = ? LIMIT 1", (token,))
+            username = cur.fetchone()
 
         finally:
             cur.close()
             self.lock.release()
+            return username[0]
+
+
+    def get_uid_from_token(self, token):
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("SELECT unique_id FROM users WHERE api_current_token = ? LIMIT 1", (token,))
+            uid = cur.fetchone()
+
+        finally:
+            cur.close()
+            self.lock.release()
+            return uid[0]
+
 
     def refresh_api_token(self):
         """
