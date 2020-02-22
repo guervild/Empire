@@ -46,7 +46,7 @@ IP_BLACKLIST = ""
 
 # default credentials used to log into the RESTful API
 API_USERNAME = "empireadmin"
-API_PASSWORD = "password123"
+API_PASSWORD = hashlib.md5("password123".encode('UTF-8')).hexdigest()
 
 # create unique id for admin
 uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))

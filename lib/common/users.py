@@ -1,6 +1,7 @@
 import threading
 import string
 import random
+import hashlib
 from . import helpers
 import json
 from pydispatch import dispatcher
@@ -37,6 +38,10 @@ class Users():
         conn = self.get_db_connection()
         enabled = 1
 
+        # MD5 hash password before storage
+        password = hashlib.md5(password.encode('UTF-8'))
+        md5_password = password.hexdigest()
+
         try:
             self.lock.acquire()
             cur = conn.cursor()
@@ -45,7 +50,7 @@ class Users():
             if not found:
                 uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
                 cur.execute("INSERT INTO users (username, password, last_logon_time, unique_id,enabled) VALUES (?,?,?,?,?)",
-                            (user_Name, password, last_logon,uid,enabled))
+                            (user_Name, md5_password, last_logon,uid,enabled))
 
                 # dispatch the event
                 signal = json.dumps({
@@ -132,11 +137,15 @@ class Users():
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
 
+        # MD5 hash password before storage
+        password = hashlib.md5(password.encode('UTF-8'))
+        md5_password = password.hexdigest()
+
         try:
             self.lock.acquire()
             cur = conn.cursor()
             cur.execute("SELECT enabled FROM users WHERE username = ? AND password = ? LIMIT 1"
-                        , (user_name, password))
+                        , (user_name, md5_password))
             enabled = cur.fetchone()
             enabled = int(''.join(map(str, enabled)))
 
@@ -219,13 +228,17 @@ class Users():
         """
         Update the last logon timestamp for a user
         """
+        # MD5 hash password before storage
+        password = hashlib.md5(password.encode('UTF-8'))
+        md5_password = password.hexdigest()
+
         conn = self.get_db_connection()
         #TODO: add handling for updating password of non-existing users
         try:
             self.lock.acquire()
             cur = conn.cursor()
 
-            cur.execute("UPDATE users SET password=? WHERE unique_id=?", (password, uid))
+            cur.execute("UPDATE users SET password=? WHERE unique_id=?", (md5_password, uid))
 
             # dispatch the event
             signal = json.dumps({
