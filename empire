@@ -1341,29 +1341,25 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'username': user_name})
 
 
-    @app.route('/api/users/disable', methods=['POST'])
-    def delete_user():
+    @app.route('/api/users/<string:uid>/disable', methods=['PUT'])
+    def disable_user(uid):
         #Check that input is a valid request
-        if not request.json or not 'username' in request.json:
+        if not request.json in request.json:
             abort(400)
 
         # Check if user is an admin
         admin = execute_db_query(conn, "SELECT 1 FROM users WHERE username = ? AND id='1'", [g.user])
         if not admin:
             abort(403)
-            
-        for option, values in request.json.items():
-            if option == "username":
-                user_name = values
 
-        status = u.disable_user(user_name)
+        status = u.disable_user(uid)
         return jsonify({'success': status})
 
 
-    @app.route('/api/users/updatepassword', methods=['PUT'])
-    def update_user_password():
+    @app.route('/api/users/<string:uid>/updatepassword', methods=['PUT'])
+    def update_user_password(uid):
         #Check that input is a valid request
-        if not request.json or not 'username' in request.json or not 'password' in request.json:
+        if not request.json or not 'password' in request.json:
             abort(400)
 
         # Check if user is an admin
@@ -1372,12 +1368,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             abort(403)
             
         for option, values in request.json.items():
-            if option == "username":
-                user_name = values
             if option == "password":
                 password = values
 
-        status = u.update_password(user_name,password)
+        status = u.update_password(uid,password)
         return jsonify({'success': status})
 
 

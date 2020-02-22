@@ -62,7 +62,7 @@ class Users():
             self.lock.release()
             return message
 
-    def disable_user(self, user_name):
+    def disable_user(self, uid):
         """
         Delete user from cache
         """
@@ -72,29 +72,29 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT 1 FROM users WHERE username = ? AND id = '1' LIMIT 1", (user_name,))
+            cur.execute("SELECT 1 FROM users WHERE unique_id = ? AND id = '1' LIMIT 1", (uid,))
             found = cur.fetchone()
             if found:
                 signal = json.dumps({
                     'print': True,
-                    'message': "Cannot disable admin: {}".format(user_name)
+                    'message': "Cannot disable admin account"
                 })
                 message = False
             else:
-                cur.execute("SELECT 1 FROM users WHERE username = ? AND enabled = '1'", (user_name,))
+                cur.execute("SELECT 1 FROM users WHERE unique_id = ? AND enabled = '1'", (uid,))
                 found = cur.fetchone()
                 if found:
-                    cur.execute("UPDATE users SET enabled = ? WHERE username = ? AND id != '1'",
-                                (enabled, user_name))
+                    cur.execute("UPDATE users SET enabled = ? WHERE unique_id = ? AND id != '1'",
+                                (enabled, uid))
                     signal = json.dumps({
                         'print': True,
-                        'message': "Disabled {} from Users".format(user_name)
+                        'message': "User Disabled"
                     })
                     message = True
                 else:
                     signal = json.dumps({
                         'print': True,
-                        'message': "User {} already disabled".format(user_name)
+                        'message': "User already disabled"
                     })
                     message = False
         finally:
@@ -215,7 +215,7 @@ class Users():
             cur.close()
             self.lock.release()
 
-    def update_password(self, user_name, password):
+    def update_password(self, uid, password):
         """
         Update the last logon timestamp for a user
         """
@@ -225,12 +225,12 @@ class Users():
             self.lock.acquire()
             cur = conn.cursor()
 
-            cur.execute("UPDATE users SET password=? WHERE username=?", (password, user_name))
+            cur.execute("UPDATE users SET password=? WHERE unique_id=?", (password, uid))
 
             # dispatch the event
             signal = json.dumps({
                 'print': True,
-                'message': "Updated password for {}".format(user_name)
+                'message': "Password updated"
             })
             dispatcher.send(signal, sender="Users")
 
