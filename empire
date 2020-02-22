@@ -925,6 +925,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentSessionID])
 
         return jsonify({'success': True})
+
     @app.route('/api/agents/<string:agent_name>/download', methods=['POST'])
     def task_agent_download(agent_name):
         """
@@ -1263,6 +1264,15 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             return jsonify({'token': token})
         else:
             return make_response('', 401)
+
+
+    @app.route('/api/admin/logout', methods=['POST'])
+    def server_logout():
+        """
+        Logs out current user
+        """
+        u.user_logout(g.uid)
+        return jsonify({'success': True})
 
 
     @app.route('/api/admin/restart', methods=['GET', 'POST', 'PUT'])

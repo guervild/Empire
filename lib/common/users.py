@@ -238,3 +238,23 @@ class Users():
             cur.close()
             self.lock.release()
             return True
+
+
+    def user_logout(self, uid):
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET api_current_token=null WHERE unique_id=?", (uid,))
+
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "User disconnected"
+            })
+            dispatcher.send(signal, sender="Users")
+
+        finally:
+            cur.close()
+            self.lock.release()
