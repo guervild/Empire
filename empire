@@ -260,7 +260,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         List all of the current registered API routes.
         """
-        import urllib
+        import urllib.request as urllib
         output = []
         for rule in app.url_map.iter_rules():
 
