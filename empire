@@ -94,15 +94,15 @@ def refresh_api_token(conn):
 # Adapted from http://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 #   example code at https://gist.github.com/miguelgrinberg/5614326
 #
-#    Verb     URI                                            Action
-#    ----     ---                                            ------
-#    GET      http://localhost:1337/api/version              return the current Empire version
+#    Verb     URI                                                   Action
+#    ----     ---                                                   ------
+#    GET      http://localhost:1337/api/version                     return the current Empire version
+#    GET      http://localhost:1337/api/map                         return list of all API routes
+#    GET      http://localhost:1337/api/config                      return the current default config
 #
-#    GET      http://localhost:1337/api/config               return the current default config
-#
-#    GET      http://localhost:1337/api/stagers              return all current stagers
-#    GET      http://localhost:1337/api/stagers/X            return the stager with name X
-#    POST     http://localhost:1337/api/stagers              generate a stager given supplied options (need to implement)
+#    GET      http://localhost:1337/api/stagers                     return all current stagers
+#    GET      http://localhost:1337/api/stagers/X                   return the stager with name X
+#    POST     http://localhost:1337/api/stagers                     generate a stager given supplied options (need to implement)
 #
 #    GET      http://localhost:1337/api/modules                     return all current modules
 #    GET      http://localhost:1337/api/modules/<name>              return the module with the specified name
@@ -110,39 +110,49 @@ def refresh_api_token(conn):
 #    POST     http://localhost:1337/api/modules/search              searches modulesfor a passed term
 #    POST     http://localhost:1337/api/modules/search/modulename   searches module names for a specific term
 #    POST     http://localhost:1337/api/modules/search/description  searches module descriptions for a specific term
-#    POST     http://localhost:1337/api/modules/search/description  searches module comments for a specific term
+#    POST     http://localhost:1337/api/modules/search/comments     searches module comments for a specific term
 #    POST     http://localhost:1337/api/modules/search/author       searches module authors for a specific term
 #
-#    GET      http://localhost:1337/api/listeners            return all current listeners
-#    GET      http://localhost:1337/api/listeners/Y          return the listener with id Y
-#    GET      http://localhost:1337/api/listeners/types      Returns a list of the loaded listeners that are available for use
-#    GET      http://localhost:1337/api/listeners/options    return all listener options
-#    POST     http://localhost:1337/api/listeners            starts a new listener with the specified options
-#    DELETE   http://localhost:1337/api/listeners/Y          kills listener Y
+#    GET      http://localhost:1337/api/listeners                   return all current listeners
+#    GET      http://localhost:1337/api/listeners/Y                 return the listener with id Y
+#    DELETE   http://localhost:1337/api/listeners/Y                 kills listener Y
+#    GET      http://localhost:1337/api/listeners/types             returns a list of the loaded listeners that are available for use
+#    GET      http://localhost:1337/api/listeners/options/Y         return listener options for Y
+#    POST     http://localhost:1337/api/listeners/Y                 starts a new listener with the specified options
 #
-#    GET      http://localhost:1337/api/agents               return all current agents
-#    GET      http://localhost:1337/api/agents/stale         return all stale agents
-#    DELETE   http://localhost:1337/api/agents/stale         removes stale agents from the database
-#    DELETE   http://localhost:1337/api/agents/Y             removes agent Y from the database
-#    GET      http://localhost:1337/api/agents/Y             return the agent with name Y
-#    GET      http://localhost:1337/api/agents/Y/results     return tasking results for the agent with name Y
-#    DELETE   http://localhost:1337/api/agents/Y/results     deletes the result buffer for agent Y
-#    POST     http://localhost:1337/api/agents/Y/shell       task agent Y to execute a shell command
-#    POST     http://localhost:1337/api/agents/Y/rename      rename agent Y
-#    GET/POST http://localhost:1337/api/agents/Y/clear       clears the result buffer for agent Y
-#    GET/POST http://localhost:1337/api/agents/Y/kill        kill agent Y
+#    GET      http://localhost:1337/api/agents                      return all current agents
+#    GET      http://localhost:1337/api/agents/stale                return all stale agents
+#    DELETE   http://localhost:1337/api/agents/stale                removes stale agents from the database
+#    DELETE   http://localhost:1337/api/agents/Y                    removes agent Y from the database
+#    GET      http://localhost:1337/api/agents/Y                    return the agent with name Y
+#    GET      http://localhost:1337/api/agents/Y/results            return tasking results for the agent with name Y
+#    DELETE   http://localhost:1337/api/agents/Y/results            deletes the result buffer for agent Y
+#    POST     http://localhost:1337/api/agents/Y/download           task agent Y to download a file
+#    POST     http://localhost:1337/api/agents/Y/upload             task agent Y to upload a file
+#    POST     http://localhost:1337/api/agents/Y/shell              task agent Y to execute a shell command
+#    POST     http://localhost:1337/api/agents/Y/rename             rename agent Y
+#    GET/POST http://localhost:1337/api/agents/Y/clear              clears the result buffer for agent Y
+#    GET/POST http://localhost:1337/api/agents/Y/kill               kill agent Y
 #
-#    GET      http://localhost:1337/api/reporting            return all logged events
-#    GET      http://localhost:1337/api/reporting/agent/X    return all logged events for the given agent name X
-#    GET      http://localhost:1337/api/reporting/type/Y     return all logged events of type Y (checkin, task, result, rename)
-#    GET      http://localhost:1337/api/reporting/msg/Z      return all logged events matching message Z, wildcards accepted
+#    GET      http://localhost:1337/api/creds                       return stored credentials
+#    POST     http://localhost:1337/api/creds                       add creds to the database
 #
-#    GET      http://localhost:1337/api/creds                return stored credentials
-#    POST     http://localhost:1337/api/creds                add creds to the database
+#    GET      http://localhost:1337/api/reporting                   return all logged events
+#    GET      http://localhost:1337/api/reporting/agent/X           return all logged events for the given agent name X
+#    GET      http://localhost:1337/api/reporting/type/Y            return all logged events of type Y (checkin, task, result, rename)
+#    GET      http://localhost:1337/api/reporting/msg/Z             return all logged events matching message Z, wildcards accepted
 #
-#    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
-#    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
-#    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
+#
+#    POST     http://localhost:1337/api/admin/login                 retrieve the API token given the correct username and password
+#    POST     http://localhost:1337/api/admin/logout                logout of current user account
+#    GET      http://localhost:1337/api/admin/restart               restart the RESTful API
+#    GET      http://localhost:1337/api/admin/shutdown              shutdown the RESTful API
+#
+#    GET      http://localhost:1337/api/users                       return all users from database
+#    POST     http://localhost:1337/api/users/add                  add a new user
+#    POST     http://localhost:1337/api/users/enable               enable a user
+#    PUT      http://localhost:1337/api/users/Y/disable             disable user Y
+#    PUT      http://localhost:1337/api/users/Y/updatepassword      update password for user Y
 #
 ####################################################################
 
