@@ -214,8 +214,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Generic exception handler.
         """
-        return make_response(jsonify({'error': repr(error)}), 500)
-
+        code = error.code if hasattr(error, 'code') else '500'
+        return make_response(jsonify({'error': repr(error)}), code)
 
     @app.errorhandler(404)
     def not_found(error):
