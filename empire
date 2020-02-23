@@ -1293,8 +1293,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reporting_users in reportingRaw:
             [ID, username, last_logon_time, enabled] = reporting_users
-            data = {"id": ID, "username": username, "last_logon_time": last_logon_time,
-                 "enabled": bool(enabled)}
+            data = {"ID": ID, "username": username, "last_logon_time": last_logon_time, "enabled": bool(enabled)}
             user_report.append(data)
 
         return jsonify({'users': user_report})
