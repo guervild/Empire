@@ -71,21 +71,6 @@ def execute_db_query(conn, query, args=None):
     return results
 
 
-def refresh_api_token(conn):
-    """
-    Generates a randomized RESTful API token and updates the value
-    in the config stored in the backend database.
-    """
-
-    # generate a randomized API token
-    rng = random.SystemRandom()
-    apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
-
-    execute_db_query(conn, "UPDATE config SET api_current_token=?", [apiToken])
-    execute_db_query(conn, "UPDATE users SET api_current_token=? WHERE id='1'", [apiToken])
-
-    return apiToken
-
 #TODO: Update with new commads
 ####################################################################
 #
@@ -149,9 +134,8 @@ def refresh_api_token(conn):
 #    GET      http://localhost:1337/api/admin/shutdown              shutdown the RESTful API
 #
 #    GET      http://localhost:1337/api/users                       return all users from database
-#    POST     http://localhost:1337/api/users/add                  add a new user
-#    POST     http://localhost:1337/api/users/enable               enable a user
-#    PUT      http://localhost:1337/api/users/Y/disable             disable user Y
+#    POST     http://localhost:1337/api/users                       add a new user
+#    PUT      http://localhost:1337/api/users/Y/disable             disable/enable user Y
 #    PUT      http://localhost:1337/api/users/Y/updatepassword      update password for user Y
 #
 ####################################################################
@@ -181,21 +165,15 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     #(dbUsername, dbPassword) = execute_db_query(conn, "SELECT api_username, api_password FROM config")[0]
 
     if username:
-        execute_db_query(conn, "UPDATE config SET api_username=?", username)
         execute_db_query(conn, "UPDATE users SET username=? WHERE id='1'", username)
 
     if password:
         password = hashlib.md5(password[0].encode('UTF-8'))
         md5_password = password.hexdigest()
-        execute_db_query(conn, "UPDATE config SET api_password=?", [md5_password])
         execute_db_query(conn, "UPDATE users SET password=? WHERE id='1'", [md5_password])
 
     print('')
     print(" * Starting Empire RESTful API on port: %s" %(port))
-
-    # refresh the token for the RESTful API
-    apiToken = refresh_api_token(conn)
-    print(" * RESTful API token: %s" %(apiToken))
 
     oldStdout = sys.stdout
     if suppress:
@@ -213,16 +191,16 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Before every request, check if a valid token is passed along with the request.
         """
-        if request.path != '/api/admin/login':
-            token = request.args.get('token')
-            user = u.get_user_from_token(token)
-            uid = u.get_uid_from_token(token)
-            if user:
-                #TODO: Have g.user be an object and not have to call g.user[1] for username
-                g.user = user
-                g.uid = uid
-            else:
-                return make_response('', 401)
+        try:
+            if request.path != '/api/admin/login':
+                token = request.args.get('token')
+                user = u.get_user_from_token(token)
+                if user:
+                    g.user = user
+                else:
+                    return make_response('', 401)
+        except:
+            return make_response('', 401)
 
 
     @app.after_request
@@ -236,7 +214,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Generic exception handler.
         """
-        return repr(error)
+        return make_response(jsonify({'error': repr(error)}), 500)
 
 
     @app.errorhandler(404)
@@ -510,7 +488,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
             for agent in main.agents.get_agents():
                 sessionID = agent[1]
-                taskID = main.agents.add_agent_task_db(sessionID, taskCommand, moduleData, uid=g.uid)
+                taskID = main.agents.add_agent_task_db(sessionID, taskCommand, moduleData, uid=g.user['id'])
                 msg = "tasked agent %s to run module %s" %(sessionID, module_name)
                 main.agents.save_agent_log(sessionID, msg)
 
@@ -519,7 +497,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         else:
             # set the agent's tasking in the cache
-            taskID = main.agents.add_agent_task_db(sessionID, taskCommand, moduleData, uid=g.uid)
+            taskID = main.agents.add_agent_task_db(sessionID, taskCommand, moduleData, uid=g.user['id'])
 
             # update the agent log
             msg = "tasked agent %s to run module %s" %(sessionID, module_name)
@@ -961,7 +939,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
             msg = "Tasked agent to download %s" % (fileName)
             main.agents.save_agent_log(agentSessionID, msg)
-            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_DOWNLOAD', fileName, uid=g.uid)
+            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_DOWNLOAD', fileName, uid=g.user['id'])
 
         return jsonify({'success': True, 'taskID': taskID})
 
@@ -1309,28 +1287,26 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Returns JSON of the users from the backend database.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT ID, username, last_logon_time, unique_id, enabled FROM users')
+        reportingRaw = execute_db_query(conn, 'SELECT ID, username, last_logon_time, enabled FROM users')
         reporting_users = []
         user_report = []
 
         for reporting_users in reportingRaw:
-            [ID, username, last_logon_time, unique_id, enabled] = reporting_users
-            data = {"ID": ID, "Username": username, "Last Logon Time": last_logon_time, "UID": unique_id,
-                 "Enabled": enabled}
+            [ID, username, last_logon_time, enabled] = reporting_users
+            data = {"ID": ID, "username": username, "last_logon_time": last_logon_time, "enabled": bool(enabled)}
             user_report.append(data)
 
-        return jsonify({'User Report': user_report})
+        return jsonify({'users': user_report})
 
 
-    @app.route('/api/users/add', methods=['POST'])
+    @app.route('/api/users', methods=['POST'])
     def create_user():
         #Check that input is a valid request
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
 
-        #Check if user is an admin
-        admin = execute_db_query(conn, "SELECT 1 FROM users WHERE username = ? AND id='1'", [g.user])
-        if not admin:
+        # Check if user is an admin
+        if not u.is_admin(g.user['id']):
             abort(403)
 
         for option, values in request.json.items():
@@ -1342,50 +1318,29 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         status = u.add_new_user(user_name, password)
         return jsonify({'success': status})
 
-
-    @app.route('/api/users/enable', methods=['POST'])
-    def enable_user():
-        #Check that input is a valid request
-        if not request.json or not 'username' in request.json:
-            abort(400)
-            
-        #Check if user is an admin
-        admin = execute_db_query(conn, "SELECT 1 FROM users WHERE username = ? AND id='1'", [g.user])
-        if not admin:
-            abort(403)
-            
-        for option, values in request.json.items():
-            if option == "username":
-                user_name = values
-
-        u.enable_user(user_name)
-        return jsonify({'username': user_name})
-
-
-    @app.route('/api/users/<string:uid>/disable', methods=['PUT'])
+    @app.route('/api/users/<int:uid>/disable', methods=['PUT'])
     def disable_user(uid):
         #Check that input is a valid request
-        if not request.json in request.json:
+        if not request.json or not 'disable' in request.json or uid == g.user['id']:
             abort(400)
 
-        # Check if user is an admin
-        admin = execute_db_query(conn, "SELECT 1 FROM users WHERE username = ? AND id='1'", [g.user])
-        if not admin:
+        # User performing the action should be an admin.
+        # User being updated should not be an admin.
+        if not u.is_admin(g.user['id']) or u.is_admin(uid):
             abort(403)
 
-        status = u.disable_user(uid)
+        status = u.disable_user(uid, request.json['disable'])
         return jsonify({'success': status})
 
 
-    @app.route('/api/users/<string:uid>/updatepassword', methods=['PUT'])
+    @app.route('/api/users/<int:uid>/updatepassword', methods=['PUT'])
     def update_user_password(uid):
         #Check that input is a valid request
         if not request.json or not 'password' in request.json:
             abort(400)
 
         # Check if user is an admin
-        admin = execute_db_query(conn, "SELECT 1 FROM users WHERE username = ? AND id='1'", [g.user])
-        if not admin:
+        if not u.is_admin(g.user['id']):
             abort(403)
             
         for option, values in request.json.items():
