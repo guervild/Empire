@@ -40,6 +40,7 @@ class Users():
         # MD5 hash password before storage
         password = hashlib.md5(password.encode('UTF-8'))
         md5_password = password.hexdigest()
+        message = False
 
         try:
             self.lock.acquire()
