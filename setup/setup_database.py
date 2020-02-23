@@ -48,9 +48,6 @@ IP_BLACKLIST = ""
 API_USERNAME = "empireadmin"
 API_PASSWORD = hashlib.md5("password123".encode('UTF-8')).hexdigest()
 
-# create unique id for admin
-uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
-
 # default obfuscation setting
 OBFUSCATE = 0
 
@@ -176,18 +173,17 @@ c.execute('''CREATE TABLE "reporting" (
     FOREIGN KEY(taskID) REFERENCES results(id)
 )''')
 
-# event_types -> checkin, task, result, rename
 c.execute('''CREATE TABLE "users" (
     "id" integer PRIMARY KEY,
-    "username" text,
+    "username" text unique,
     "password" text,
-    "api_current_token" text,
+    "api_token" text,
     "last_logon_time" text,
-    "unique_id" text,
-    "enabled" integer
+    "enabled" boolean,
+    "admin" boolean
 )''')
 
-c.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, "", "", uid, "1"))
+c.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", ("1", API_USERNAME, API_PASSWORD, "", "", True, True))
 
 # commit the changes and close everything off
 conn.commit()

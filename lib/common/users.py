@@ -30,13 +30,12 @@ class Users():
         self.lock.release()
         return self.mainMenu.conn
 
-    def add_new_user(self, user_Name, password):
+    def add_new_user(self, user_name, password):
         """
         Add new user to cache
         """
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
-        enabled = 1
 
         # MD5 hash password before storage
         password = hashlib.md5(password.encode('UTF-8'))
@@ -45,17 +44,14 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1", (user_Name,))
-            found = cur.fetchone()
-            if not found:
-                uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
-                cur.execute("INSERT INTO users (username, password, last_logon_time, unique_id,enabled) VALUES (?,?,?,?,?)",
-                            (user_Name, md5_password, last_logon,uid,enabled))
+            success = cur.execute("INSERT INTO users (username, password, last_logon_time, enabled, admin) VALUES (?,?,?,?,?)",
+                        (user_name, md5_password, last_logon, True, False))
 
+            if success:
                 # dispatch the event
                 signal = json.dumps({
                     'print': True,
-                    'message': "Added {} to Users".format(user_Name)
+                    'message': "Added {} to Users".format(user_name)
                 })
                 dispatcher.send(signal, sender="Users")
                 message = True
@@ -67,71 +63,36 @@ class Users():
             self.lock.release()
             return message
 
-    def disable_user(self, uid):
+    def disable_user(self, uid, disable):
         """
-        Delete user from cache
+        Disable user
         """
         conn = self.get_db_connection()
-        enabled = 0
 
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT 1 FROM users WHERE unique_id = ? AND id = '1' LIMIT 1", (uid,))
-            found = cur.fetchone()
-            if found:
+            admin = cur.execute("SELECT admin FROM users WHERE id = ? LIMIT 1", (uid,)).fetchone()
+
+            if admin[0] == True:
                 signal = json.dumps({
                     'print': True,
                     'message': "Cannot disable admin account"
                 })
                 message = False
             else:
-                cur.execute("SELECT 1 FROM users WHERE unique_id = ? AND enabled = '1'", (uid,))
-                found = cur.fetchone()
-                if found:
-                    cur.execute("UPDATE users SET enabled = ? WHERE unique_id = ? AND id != '1'",
-                                (enabled, uid))
-                    signal = json.dumps({
-                        'print': True,
-                        'message': "User Disabled"
-                    })
-                    message = True
-                else:
-                    signal = json.dumps({
-                        'print': True,
-                        'message': "User already disabled"
-                    })
-                    message = False
+                cur.execute("UPDATE users SET enabled = ? WHERE id = ?",
+                            (not(disable), uid))
+                signal = json.dumps({
+                    'print': True,
+                    'message': 'User {}'.format('disabled' if disable else 'enabled')
+                })
+                message = True
         finally:
             cur.close()
             self.lock.release()
             dispatcher.send(signal, sender="Users")
             return message
-
-
-    def enable_user(self, user_name):
-        """
-        Enable user from cache
-        """
-        conn = self.get_db_connection()
-        enabled = 1
-
-        try:
-            self.lock.acquire()
-            cur = conn.cursor()
-            cur.execute("UPDATE users SET enabled = ? WHERE username = ?",
-                        (enabled, user_name))
-            # dispatch the event
-            signal = json.dumps({
-                'print': True,
-                'message': "Enabled {} from Users".format(user_name)
-            })
-            dispatcher.send(signal, sender="Users")
-
-        finally:
-            cur.close()
-            self.lock.release()
-
 
     def user_login(self, user_name, password):
         last_logon = helpers.get_datetime()
@@ -151,7 +112,7 @@ class Users():
 
             if enabled == 1:
                 token = self.refresh_api_token()
-                cur.execute("UPDATE users SET last_logon_time = ?, api_current_token = ? WHERE username = ?",
+                cur.execute("UPDATE users SET last_logon_time = ?, api_token = ? WHERE username = ?",
                             (last_logon, token, user_name))
                 # dispatch the event
                 signal = json.dumps({
@@ -172,29 +133,13 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT username FROM users WHERE api_current_token = ? LIMIT 1", (token,))
-            username = cur.fetchone()
+            cur.execute("SELECT id, username, api_token, last_logon_time, enabled FROM users WHERE api_token = ? LIMIT 1", (token,))
+            [ id, username, api_token, last_logon_time, enabled ] = cur.fetchone()
 
         finally:
             cur.close()
             self.lock.release()
-            return username[0]
-
-
-    def get_uid_from_token(self, token):
-        conn = self.get_db_connection()
-
-        try:
-            self.lock.acquire()
-            cur = conn.cursor()
-            cur.execute("SELECT unique_id FROM users WHERE api_current_token = ? LIMIT 1", (token,))
-            uid = cur.fetchone()
-
-        finally:
-            cur.close()
-            self.lock.release()
-            return uid[0]
-
+            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled) }
 
     def refresh_api_token(self):
         """
@@ -206,23 +151,6 @@ class Users():
         apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
         return apiToken
-
-    def update_last_logon(self, token):
-        """
-        Update the last logon timestamp for a user
-        """
-        last_logon = helpers.get_datetime()
-        conn = self.get_db_connection()
-
-        try:
-            self.lock.acquire()
-            cur = conn.cursor()
-
-            cur.execute("UPDATE users SET last_logon_time=? WHERE api_current_token=?", (last_logon, token))
-
-        finally:
-            cur.close()
-            self.lock.release()
 
     def update_password(self, uid, password):
         """
@@ -259,7 +187,7 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("UPDATE users SET api_current_token=null WHERE unique_id=?", (uid,))
+            cur.execute("UPDATE users SET api_token=null WHERE id=?", (uid,))
 
             # dispatch the event
             signal = json.dumps({
@@ -271,3 +199,13 @@ class Users():
         finally:
             cur.close()
             self.lock.release()
+
+    def is_admin(self, uid):
+        conn = self.get_db_connection()
+        cur = conn.cursor()
+        admin = cur.execute("SELECT admin FROM users WHERE id=?", (uid,)).fetchone()
+
+        if admin[0] == True:
+            return True
+
+        return False
