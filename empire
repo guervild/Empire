@@ -1287,13 +1287,13 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Returns JSON of the users from the backend database.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT ID, username, last_logon_time, enabled FROM users')
+        reportingRaw = execute_db_query(conn, 'SELECT ID, username, last_logon_time, enabled, admin FROM users')
         reporting_users = []
         user_report = []
 
         for reporting_users in reportingRaw:
-            [ID, username, last_logon_time, enabled] = reporting_users
-            data = {"ID": ID, "username": username, "last_logon_time": last_logon_time, "enabled": bool(enabled)}
+            [ID, username, last_logon_time, enabled, admin] = reporting_users
+            data = {"ID": ID, "username": username, "last_logon_time": last_logon_time, "enabled": bool(enabled), "admin": bool(admin)}
             user_report.append(data)
 
         return jsonify({'users': user_report})
