@@ -1238,7 +1238,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         Takes a supplied username and password and returns the current API token
         if authentication is accepted.
         """
-
         if not request.json or not 'username' in request.json or not 'password' in request.json:
             abort(400)
 
@@ -1340,9 +1339,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             abort(400)
 
         # Check if user is an admin
-        if not u.is_admin(g.user['id']):
+        if not (u.is_admin(g.user['id']) or uid==g.user['id']):
             abort(403)
-            
+
         for option, values in request.json.items():
             if option == "password":
                 password = values

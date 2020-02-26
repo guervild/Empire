@@ -102,7 +102,6 @@ class Users():
         # MD5 hash password before storage
         password = hashlib.md5(password.encode('UTF-8'))
         md5_password = password.hexdigest()
-
         try:
             self.lock.acquire()
             cur = conn.cursor()
@@ -160,14 +159,14 @@ class Users():
         # MD5 hash password before storage
         password = hashlib.md5(password.encode('UTF-8'))
         md5_password = password.hexdigest()
-
+        print(md5_password)
         conn = self.get_db_connection()
         #TODO: add handling for updating password of non-existing users
         try:
             self.lock.acquire()
             cur = conn.cursor()
 
-            cur.execute("UPDATE users SET password=? WHERE unique_id=?", (md5_password, uid))
+            cur.execute("UPDATE users SET password=? WHERE id=?", (md5_password, uid))
 
             # dispatch the event
             signal = json.dumps({
