@@ -8,8 +8,6 @@ from pydispatch import dispatcher
 
 
 class Users():
-    # This is a demo class for handling users
-    # usercache represents the db
     def __init__(self, mainMenu):
         self.mainMenu = mainMenu
 
@@ -106,24 +104,23 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT enabled FROM users WHERE username = ? AND password = ? LIMIT 1"
+            cur.execute("SELECT * FROM users WHERE username = ? AND password = ? AND enabled = true LIMIT 1"
                         , (user_name, md5_password))
-            enabled = cur.fetchone()
-            enabled = int(''.join(map(str, enabled)))
+            user = cur.fetchone()
 
-            if enabled == 1:
-                token = self.refresh_api_token()
-                cur.execute("UPDATE users SET last_logon_time = ?, api_token = ? WHERE username = ?",
-                            (last_logon, token, user_name))
-                # dispatch the event
-                signal = json.dumps({
-                    'print': True,
-                    'message': "{} connected".format(user_name)
-                })
-                dispatcher.send(signal, sender="Users")
-                return token
-            else:
+            if user == None:
                 return None
+
+            token = self.refresh_api_token()
+            cur.execute("UPDATE users SET last_logon_time = ?, api_token = ? WHERE username = ?",
+                        (last_logon, token, user_name))
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "{} connected".format(user_name)
+            })
+            dispatcher.send(signal, sender="Users")
+            return token
         finally:
             cur.close()
             self.lock.release()
@@ -134,13 +131,13 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT id, username, api_token, last_logon_time, enabled FROM users WHERE api_token = ? LIMIT 1", (token,))
-            [ id, username, api_token, last_logon_time, enabled ] = cur.fetchone()
+            cur.execute("SELECT id, username, api_token, last_logon_time, enabled, admin FROM users WHERE api_token = ? LIMIT 1", (token,))
+            [ id, username, api_token, last_logon_time, enabled, admin ] = cur.fetchone()
 
         finally:
             cur.close()
             self.lock.release()
-            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled) }
+            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled), 'admin': bool(admin) }
 
     def refresh_api_token(self):
         """
@@ -167,7 +164,7 @@ class Users():
             self.lock.acquire()
             cur = conn.cursor()
 
-            cur.execute("UPDATE users SET password=? WHERE unique_id=?", (md5_password, uid))
+            cur.execute("UPDATE users SET password=? WHERE id=?", (md5_password, uid))
 
             # dispatch the event
             signal = json.dumps({

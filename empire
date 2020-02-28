@@ -134,6 +134,7 @@ def execute_db_query(conn, query, args=None):
 #    GET      http://localhost:1337/api/admin/shutdown              shutdown the RESTful API
 #
 #    GET      http://localhost:1337/api/users                       return all users from database
+#    GET      http://localhost:1337/api/users/me                    return the user for the given token
 #    POST     http://localhost:1337/api/users                       add a new user
 #    PUT      http://localhost:1337/api/users/Y/disable             disable/enable user Y
 #    PUT      http://localhost:1337/api/users/Y/updatepassword      update password for user Y
@@ -1260,7 +1261,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Logs out current user
         """
-        u.user_logout(g.uid)
+        u.user_logout(g.user['id'])
         return jsonify({'success': True})
 
 
@@ -1298,6 +1299,13 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         return jsonify({'users': user_report})
 
+
+    @app.route('/api/users/me', methods=['GET'])
+    def get_user_me():
+        """
+        Returns the current user.
+        """
+        return g.user
 
     @app.route('/api/users', methods=['POST'])
     def create_user():
