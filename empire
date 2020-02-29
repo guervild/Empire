@@ -1316,18 +1316,12 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         if not u.is_admin(g.user['id']):
             abort(403)
 
-        for option, values in request.json.items():
-            if option == "username":
-                user_name = values
-            if option == "password":
-                password = values
-
-        status = u.add_new_user(user_name, password)
+        status = u.add_new_user(request.json('username'), request.json('password'))
         return jsonify({'success': status})
 
     @app.route('/api/users/<int:uid>/disable', methods=['PUT'])
     def disable_user(uid):
-        #Check that input is a valid request
+        # Don't disable yourself
         if not request.json or not 'disable' in request.json or uid == g.user['id']:
             abort(400)
 
@@ -1342,19 +1336,14 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     @app.route('/api/users/<int:uid>/updatepassword', methods=['PUT'])
     def update_user_password(uid):
-        #Check that input is a valid request
         if not request.json or not 'password' in request.json:
             abort(400)
 
-        # Check if user is an admin
-        if not (u.is_admin(g.user['id']) or uid==g.user['id']):
+        # Must be an admin or updating self.
+        if not (u.is_admin(g.user['id']) or uid == g.user['id']):
             abort(403)
 
-        for option, values in request.json.items():
-            if option == "password":
-                password = values
-
-        status = u.update_password(uid,password)
+        status = u.update_password(uid, request.json['password'])
         return jsonify({'success': status})
 
 

@@ -28,6 +28,18 @@ class Users():
         self.lock.release()
         return self.mainMenu.conn
 
+    def user_exists(self, uid):
+        """
+        Return whether a user exists or not
+        """
+        conn = self.get_db_connection()
+        cur = conn.cursor()
+        [ exists ] = cur.execute("SELECT 1 FROM users WHERE id = ? LIMIT 1", (uid,)).fetchone()
+        if exists:
+            return True
+
+        return False
+
     def add_new_user(self, user_name, password):
         """
         Add new user to cache
@@ -36,8 +48,7 @@ class Users():
         conn = self.get_db_connection()
 
         # MD5 hash password before storage
-        password = hashlib.md5(password.encode('UTF-8'))
-        md5_password = password.hexdigest()
+        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
         message = False
 
         try:
@@ -56,11 +67,11 @@ class Users():
                 message = True
             else:
                 message = False
-
         finally:
             cur.close()
             self.lock.release()
-            return message
+
+        return message
 
     def disable_user(self, uid, disable):
         """
@@ -71,9 +82,10 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            admin = cur.execute("SELECT admin FROM users WHERE id = ? LIMIT 1", (uid,)).fetchone()
 
-            if admin[0] == True:
+            if not self.user_exists(uid):
+                    message = False
+            elif self.is_admin(uid):
                 signal = json.dumps({
                     'print': True,
                     'message': "Cannot disable admin account"
@@ -90,16 +102,17 @@ class Users():
         finally:
             cur.close()
             self.lock.release()
-            dispatcher.send(signal, sender="Users")
-            return message
+
+        dispatcher.send(signal, sender="Users")
+        return message
 
     def user_login(self, user_name, password):
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
 
         # MD5 hash password before storage
-        password = hashlib.md5(password.encode('UTF-8'))
-        md5_password = password.hexdigest()
+        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
+
         try:
             self.lock.acquire()
             cur = conn.cursor()
@@ -132,33 +145,21 @@ class Users():
             cur = conn.cursor()
             cur.execute("SELECT id, username, api_token, last_logon_time, enabled, admin FROM users WHERE api_token = ? LIMIT 1", (token,))
             [ id, username, api_token, last_logon_time, enabled, admin ] = cur.fetchone()
-
+            
+            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled), 'admin': bool(admin) }
         finally:
             cur.close()
             self.lock.release()
-            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled), 'admin': bool(admin) }
-
-    def refresh_api_token(self):
-        """
-        Generates a randomized RESTful API token and updates the value
-        in the config stored in the backend database.
-        """
-        # generate a randomized API token
-        rng = random.SystemRandom()
-        apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
-
-        return apiToken
 
     def update_password(self, uid, password):
         """
         Update the last logon timestamp for a user
         """
         # MD5 hash password before storage
-        password = hashlib.md5(password.encode('UTF-8'))
-        md5_password = password.hexdigest()
-        print(md5_password)
+        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
+
         conn = self.get_db_connection()
-        #TODO: add handling for updating password of non-existing users
+
         try:
             self.lock.acquire()
             cur = conn.cursor()
@@ -171,11 +172,11 @@ class Users():
                 'message': "Password updated"
             })
             dispatcher.send(signal, sender="Users")
-
         finally:
             cur.close()
             self.lock.release()
-            return True
+
+        return True
 
 
     def user_logout(self, uid):
@@ -197,12 +198,26 @@ class Users():
             cur.close()
             self.lock.release()
 
+    def refresh_api_token(self):
+        """
+        Generates a randomized RESTful API token and updates the value
+        in the config stored in the backend database.
+        """
+        # generate a randomized API token
+        rng = random.SystemRandom()
+        apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
+
+        return apiToken
+
     def is_admin(self, uid):
+        """
+        Returns whether a user is an admin or not.
+        """
         conn = self.get_db_connection()
         cur = conn.cursor()
-        admin = cur.execute("SELECT admin FROM users WHERE id=?", (uid,)).fetchone()
+        [ admin ] = cur.execute("SELECT admin FROM users WHERE id=?", (uid,)).fetchone()
 
-        if admin[0] == True:
+        if admin == True:
             return True
 
         return False
