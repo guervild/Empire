@@ -34,16 +34,24 @@ Empire relies heavily on the work from several other projects for its underlying
 Empire is developed by [@harmj0y](https://twitter.com/harmj0y), [@sixdub](https://twitter.com/sixdub), [@enigma0x3](https://twitter.com/enigma0x3), [@rvrsh3ll](https://twitter.com/424f424f), [@killswitch_gui](https://twitter.com/killswitch_gui), [@xorrior](https://twitter.com/xorrior), and [@bcsecurity1](https://twitter.com/BCSecurity1). While the main fork for Empire is no longer maintained, this fork is maintained by [BC-Security](https://www.bc-security.org) and will continue to receive periodic updates.
 
 ## Release Notes
-In Empire 3.1, we will no longer be actively supporting the Python 2.7 base code. If you wish to continue to leverage Python 2.7 then please use the 3.0.X releases since they were build to ensure backward compatibility.
+In Empire 3.1, we will no longer be actively supporting the Python 2.7 base code. If you wish to continue to leverage Python 2.7 then please use the 3.0.X releases since they were built to ensure backward compatibility.
 
-One of the biggest updates in 3.1 is the addition of Multi-User Collaboration to the API. This update is a big change to how users will interact with Empire. Previously, users would share a single login and be unable to track taskings individually. This has been completely reworked to allow User Management through the API.
+One of the biggest updates in 3.1 is the addition of Multi-User Collaboration to the API. This update adds the ability of users to interact with Empire in a completely new way. Previously, API users would share a single login and be unable to track individual taskings. This has been completely reworked to allow User Management through the API. This feature is essential for the upcoming release of [Starkiller]( https://twitter.com/BCSecurity1/status/1231992100394160130).
 
-Next, we have added the ability to randomize function names inside of Empire. This proof of concept is a huge step forward because it tests the ability to mask individual functions inside of Empire and further mask detection.
+Next, we have added the ability to randomize function names inside of Empire which we call Function Name Aliasing. This proof of concept is a huge step forward in evasion because it tests the ability to mask individual functions inside of Empire and further mask detection. Function name aliasing is currently only built for Invoke-Empire and Invoke-Mimikatz but will be expanded in the future.
 
-Finally, we added the...Starkiller. The full list of changes can be reviewed in the [changelog](https://github.com/BC-SECURITY/Empire/blob/master/changelog).
+The full list of changes can be reviewed in the [changelog](https://github.com/BC-SECURITY/Empire/blob/master/changelog).
 
 ## Install
+### Kali
 
+You can install the latest version of Empire by running the following:
+
+```sh
+apt install powershell-empire
+```
+
+### Github
 To install and run:
 
 ```sh
@@ -54,7 +62,7 @@ sudo ./setup/install.sh
 
 There's also a [quickstart here](http://www.powershellempire.com/?page_id=110) and full [documentation here](http://www.powershellempire.com/?page_id=83).
 
-## Docker
+### Docker
 If you want to run Empire using a pre-built docker container:
 ```bash
 docker pull bcsecurity/empire:{version}
@@ -81,10 +89,10 @@ Check out the [Empire wiki](https://github.com/EmpireProject/Empire/wiki/Quickst
 ## To Do List
 
 * [Invoke-SocksProxy](https://github.com/p3nt4/Invoke-SocksProxy)
-* Function name randomization
-* Function name aliasing
 * Python 2.7 launchers calling back to Python 3.x
 * DNS over HTTPS launcher
+* Header randomization
+* Integration with [RedELK](https://github.com/outflanknl/RedELK)
 
 ## Contribution Rules
 

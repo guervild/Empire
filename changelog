@@ -1,4 +1,4 @@
-2/xx/2020
+3/2/2020
 ------------
 - Version 3.1 Master Release
 	- Added Multi-user Collaboration to API - #105 (@Cx01N & @Vinnybod)
@@ -9,6 +9,7 @@
 	- Fixed str/byte in empire.py - #103 (@hypnoticpattern)
 	- Fixed typos in helpers.py - #103 (@hypnoticpattern)
     - Fixed unsupported formatting for null hostname - #103 (@hypnoticpattern)
+    - Added function name aliasing to Invoke-Empire & Mimikatz - #109 (@Hubbl3)
 
 2/6/2020
 ------------
