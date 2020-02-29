@@ -178,6 +178,9 @@ class Users():
         """
         conn = self.get_db_connection()
 
+        if not self.user_exists(uid):
+            return False
+
         try:
             self.lock.acquire()
             cur = conn.cursor()
