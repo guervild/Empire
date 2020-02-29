@@ -23,9 +23,7 @@ class Users():
         """
         Returns a handle to the DB
         """
-        self.lock.acquire()
         self.mainMenu.conn.row_factory = None
-        self.lock.release()
         return self.mainMenu.conn
 
     def user_exists(self, uid):

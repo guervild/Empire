@@ -1314,7 +1314,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         if not u.is_admin(g.user['id']):
             abort(403)
 
-        status = u.add_new_user(request.json('username'), request.json('password'))
+        status = u.add_new_user(request.json['username'], request.json['password'])
         return jsonify({'success': status})
 
     @app.route('/api/users/<int:uid>/disable', methods=['PUT'])

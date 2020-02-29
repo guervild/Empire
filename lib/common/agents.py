@@ -1098,10 +1098,10 @@ class Agents(object):
                     if pk is None:
                         pk = 0
                     pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO taskings (id, agent, data, unique_id, time_stamp) VALUES(?, ?, ?, ?, ?)", [pk, sessionID, task[:100], uid, timestamp])
+                    cur.execute("INSERT INTO taskings (id, agent, data, user_id, time_stamp) VALUES(?, ?, ?, ?, ?)", [pk, sessionID, task[:100], uid, timestamp])
 
                     # Create result for data when it arrives
-                    cur.execute("INSERT INTO results (id, agent, unique_id) VALUES (?,?,?)", (pk, sessionID, uid))
+                    cur.execute("INSERT INTO results (id, agent, user_id) VALUES (?,?,?)", (pk, sessionID, uid))
 
                     # append our new json-ified task and update the backend
                     agent_tasks.append([taskName, task, pk])
@@ -1109,7 +1109,7 @@ class Agents(object):
 
                     # update last seen time for user
                     last_logon = helpers.get_datetime()
-                    cur.execute("UPDATE users SET last_logon_time = ? WHERE unique_id = ?",
+                    cur.execute("UPDATE users SET last_logon_time = ? WHERE user_id = ?",
                                 (last_logon, uid))
 
                     # dispatch this event
