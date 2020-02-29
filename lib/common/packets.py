@@ -307,7 +307,6 @@ def parse_routing_packet(stagingKey, data):
                     break
                 
                 offset += 20 + length
-            
             return results
         
         else:
@@ -362,7 +361,7 @@ def build_routing_packet(stagingKey, sessionID, language, meta="NONE", additiona
     rc4EncData = encryption.rc4(key, data)
     # return an rc4 encyption of the routing packet, append an HMAC of the packet, then the actual encrypted data
     if isinstance(encData, str) and sys.version[0] != "2":
-        encData = encData.encode('UTF-8')
+        encData = encData.encode('Latin-1')
 
     packet = RC4IV + rc4EncData + encData
     return packet

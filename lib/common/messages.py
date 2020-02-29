@@ -184,7 +184,6 @@ def display_agents(agents):
         print(" ----     -- -----------     ------------      --------                -------            ---    -----    ---------            ----------------")
 
         for agent in agents:
-
             if str(agent['high_integrity']) == '1':
                 # add a * to the username if it's high integrity
                 agent['username'] = '*' + str(agent['username'])
@@ -200,9 +199,9 @@ def display_agents(agents):
             print(" %.8s %.2s %.15s %.17s %.23s %.18s %.6s %.8s %.31s %.16s" % ('{0: <8}'.format(agent['name']),
                                   '{0: <2}'.format(agent['language']),
                                   '{0: <15}'.format(str(agent['internal_ip']).split(" ")[0]),
-                                  '{0: <17}'.format(agent['hostname']),
-                                  '{0: <23}'.format(agent['username']),
-                                  '{0: <18}'.format(agent['process_name']),
+                                  '{0: <17}'.format(str(agent['hostname'])),
+                                  '{0: <23}'.format(str(agent['username'])),
+                                  '{0: <18}'.format(str(agent['process_name'])),
                                   '{0: <6}'.format(str(agent['process_id'])),
                                   '{0: <8}'.format(str(agent['delay']) + "/"  +str(agent['jitter'])),
                                   '{0: <31}'.format(str(helpers.lastseen(agent['lastseen_time'], agent['delay'], agent['jitter']))),
@@ -476,8 +475,10 @@ def display_credentials(creds):
         domain = cred[2]
         username = cred[3]
         password = cred[4]
-        host = cred[5]
-
+        if isinstance(cred[5], bytes):
+            host = cred[5].decode('latin-1')
+        else:
+            host = cred[5]
         print("  %s%s%s%s%s%s" % ('{0: <8}'.format(credID), '{0: <11}'.format(credType), '{0: <25}'.format(domain), '{0: <17}'.format(username), '{0: <17}'.format(host), password))
 
     print('')

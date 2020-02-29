@@ -78,7 +78,8 @@ def refresh_api_token(conn):
     """
 
     # generate a randomized API token
-    apiToken = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
+    rng = random.SystemRandom()
+    apiToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
     execute_db_query(conn, "UPDATE config SET api_current_token=?", [apiToken])
 
@@ -95,7 +96,8 @@ def get_permanent_token(conn):
     permanentToken = execute_db_query(conn, "SELECT api_permanent_token FROM config")[0]
     permanentToken = permanentToken[0]
     if not permanentToken:
-        permanentToken = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
+        rng = random.SystemRandom()
+        permanentToken = ''.join(rng.choice(string.ascii_lowercase + string.digits) for x in range(40))
         execute_db_query(conn, "UPDATE config SET api_permanent_token=?", [permanentToken])
 
     return permanentToken
@@ -129,6 +131,7 @@ def get_permanent_token(conn):
 #
 #    GET      http://localhost:1337/api/listeners            return all current listeners
 #    GET      http://localhost:1337/api/listeners/Y          return the listener with id Y
+#    GET      http://localhost:1337/api/listeners/types      Returns a list of the loaded listeners that are available for use
 #    GET      http://localhost:1337/api/listeners/options    return all listener options
 #    POST     http://localhost:1337/api/listeners            starts a new listener with the specified options
 #    DELETE   http://localhost:1337/api/listeners/Y          kills listener Y
@@ -305,7 +308,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
 
         stagers = []
-        for stagerName, stager in main.stagers.stagers.iteritems():
+        for stagerName, stager in main.stagers.stagers.items():
             info = copy.deepcopy(stager.info)
             info['options'] = stager.options
             info['Name'] = stagerName
@@ -323,7 +326,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             return make_response(jsonify({'error': 'stager name %s not found, make sure to use [os]/[name] format, ie. windows/dll' %(stager_name)}), 404)
 
         stagers = []
-        for stagerName, stager in main.stagers.stagers.iteritems():
+        for stagerName, stager in main.stagers.stagers.items():
             if stagerName == stager_name:
                 info = copy.deepcopy(stager.info)
                 info['options'] = stager.options
@@ -358,22 +361,26 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         stager = main.stagers.stagers[stagerName]
 
         # set all passed options
-        for option, values in request.json.iteritems():
+        for option, values in request.json.items():
             if option != 'StagerName':
                 if option not in stager.options:
                     return make_response(jsonify({'error': 'Invalid option %s, check capitalization.' %(option)}), 400)
                 stager.options[option]['Value'] = values
 
         # validate stager options
-        for option, values in stager.options.iteritems():
+        for option, values in stager.options.items():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
                 return make_response(jsonify({'error': 'required stager options missing'}), 400)
 
         stagerOut = copy.deepcopy(stager.options)
 
         if ('OutFile' in stagerOut) and (stagerOut['OutFile']['Value'] != ''):
-            # if the output was intended for a file, return the base64 encoded text
-            stagerOut['Output'] = base64.b64encode(stager.generate())
+            if isinstance(stager.generate(),str):
+                # if the output was intended for a file, return the base64 encoded text
+                stagerOut['Output'] = base64.b64encode(stager.generate().encode('UTF-8'))
+            else:
+                stagerOut['Output'] = base64.b64encode(stager.generate())
+
         else:
             # otherwise return the text of the stager generation
             stagerOut['Output'] = stager.generate()
@@ -388,7 +395,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
 
         modules = []
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             moduleInfo = copy.deepcopy(module.info)
             moduleInfo['options'] = module.options
             moduleInfo['Name'] = moduleName
@@ -431,7 +438,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         module = main.modules.modules[module_name]
 
         # set all passed module options
-        for key, value in request.json.iteritems():
+        for key, value in request.json.items():
             if key not in module.options:
                 return make_response(jsonify({'error': 'invalid module option'}), 400)
 
@@ -440,7 +447,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         # validate module options
         sessionID = module.options['Agent']['Value']
 
-        for option, values in module.options.iteritems():
+        for option, values in module.options.items():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
                 return make_response(jsonify({'error': 'required module option missing'}), 400)
 
@@ -475,7 +482,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             return make_response(jsonify({'error': 'module produced an empty script'}), 400)
 
         try:
-            moduleData.decode('ascii')
+            if isinstance(moduleData, bytes):
+                moduleData = moduleData.decode('ascii')
         except UnicodeDecodeError:
             return make_response(jsonify({'error': 'module source contains non-ascii characters'}), 400)
 
@@ -543,7 +551,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         modules = []
 
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()) or (searchTerm.lower() in ("".join(module.info['Description'])).lower()) or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()) or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -568,7 +576,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         modules = []
 
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -593,7 +601,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         modules = []
 
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Description'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -618,7 +626,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         modules = []
 
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -643,7 +651,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         modules = []
 
-        for moduleName, module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.items():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -708,6 +716,13 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             else:
                 return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
 
+    @app.route('/api/listeners/types', methods=['GET'])
+    def get_listener_types():
+        """
+        Returns a list of the loaded listeners that are available for use.
+        """
+
+        return jsonify({'types' : list(main.listeners.loadedListeners.keys())})
 
     @app.route('/api/listeners/options/<string:listener_type>', methods=['GET'])
     def get_listener_options(listener_type):
@@ -732,9 +747,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         listenerObject = main.listeners.loadedListeners[listener_type]
         # set all passed options
-        for option, values in request.json.iteritems():
-            if type(values) == unicode:
-                values = values.encode('utf8')
+        for option, values in request.json.items():
+            if isinstance(values, bytes):
+                values = values.decode('UTF-8')
             if option == "Name":
                 listenerName = values
 
@@ -765,9 +780,20 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         for activeAgent in activeAgentsRaw:
             [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
 
-            agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+            intervalMax = (delay + delay * jitter)+30
+
+            # get the agent last check in time
+            agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
+
+            stale = agentTime < time.mktime(time.localtime()) - intervalMax
+
+            if isinstance(session_key,bytes):
+                session_key = session_key.decode('latin-1').encode('utf-8')
+
+            agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results, "stale":stale})
 
         return jsonify({'agents' : agents})
+
 
 
     @app.route('/api/agents/stale', methods=['GET'])
@@ -790,6 +816,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
 
             if agentTime < time.mktime(time.localtime()) - intervalMax:
+                if isinstance(session_key, bytes):
+                    session_key = session_key.decode('latin-1').encode('utf-8')
 
                 staleAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
@@ -856,7 +884,11 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for activeAgent in activeAgentsRaw:
             [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
-            activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+            if isinstance(session_key,bytes):
+                session_key = session_key.decode('latin-1').encode('utf-8')
+
+            activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : activeAgents})
 

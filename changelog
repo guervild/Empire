@@ -1,8 +1,81 @@
-11/26/2019
+2/6/2020
 ------------
-- Version 3.0 Beta Release
+- Version 3.0.7 Master Release
+	- Fixed string decode error in API - #92 (@Cx01N)
+	- Fixed python3 conversion errors in backdoorlnkmacro, multi/war, osx/dylib, osx/pkg, and osx/macho launchers (@Cx01N & @hypnoticpattern)
+	- Fixed exception error in autorun queue - #95 (@Cx01N)
+	- Fixed report generation and SQL database errors (@Vinnybod & @Cx01N)
+
+1/31/2020
+------------
+- Version 3.0.6 Master Release
+	- Fixed osx stager generation byte/str errors - #84 (@hypnoticpattern)
+	- Fixed osx appbundle generation which was stripping the wrong string - #84 (@hypnoticpattern)
+	- Removed future imports from python3 launcher, so it works without any extra libraries - #81 (@Cx01N)
+	- Staging key no longer needs to be exactly 32 characters - #85 (@Cx01N)
+	- Add "stale" property to agents endpoint - #90 (@Vinnybod)
+	- Agents endpoint now returns agents without failing due to session_key encoding - #90 (@Vinnybod)
+	- Fixed an indentation bug in aes.py (@Cx01N)
+
+1/21/2020
+------------
+- Version 3.0.5 Master Release
+	- Fixed setup_database.py python3 issue - #75 (@linxon)
+	- Added loaded listener types to API - #78 (@Vinnybod)
+	- Fixed python launcherBase (@Cx01N)
+	- Updated Python 3.8 compatibility in stager - #72 (@complana)
+	- Fixed Powerup Invoke-allchecks issue - #64 (@SkiddieTech)
+	- Fixed shellcode stager - #76 (@Hubbl3)
+	- Fixed binary upload error - #55 (@Hubbl3)
+	- Fixed multi/bash error (@Cx01N)
+
+1/14/2020
+------------
+- Version 3.0.4 Master Release
+	- Fixed data/agents.py error - #70 (@sbrun)
+
+1/13/2020
+------------
+- Version 3.0.3 Master Release
+	- Updated RESTful API to Python 3 - #49 (@Cx01N)
+	- Fixed credential issue - #65 (@Hubbl3)
+	- Fixed python agent - #52 (@Cx01N, @Hubbl3)
+	- Cleaned up install files - #58 (@Vinnybod)
+
+1/7/2020
+------------
+- Version 3.0.2 Master Release
+	- Updated SystemRandom() and maintain API compatibility - #29 (@moloch--)
+	- Fixed invoke-shell code (@Hubbl3)
+	- Fixed meterpreter stager generation - #59 (@Hubbl3)
+	- Fixed lnk and dll launchers - #57 (@C01N)
+	- Fixed multi/macro launcher - #60 (@Hubbl3)
+	- Updated orphaned agent handling - #56 (@Hubbl3)
+	- Fixed pip3 install - #50 (@Hubbl3)
+	- Removed unsupported invoke-shellcode options (@Hubbl3)
+
+12/29/2019
+------------
+- Version 3.0.1 Master Release
+	- Fixed sysinfo error - #36 (@Invoke-Mimikatz)
+	- Fixed Debian 10.x docker - #38 (@Vinnybod)
+	- Fixed windows/macro stager error - #30 (@Cx01N)
+	- Fixed upload file error - #30 (@Cx01N)
+	- Fixed meterpreter error - #42 (@Cx01N)
+	- Fixed download file error (@Cx01N)
+	- Fixed scriptcmd error - #45 (@Invoke-Mimikatz)
+	- Fixed print creds error - #31 (@Hubbl3)
+	- Cleaned up print results (@Cx01N)
+	- Fixed long running module issue - #16 (@Hubbl3)
+
+Thank you to the contributors for spending time debugging with our team.
+Please contact us at Empire@bc-security.org if credit is incorrectly cited.
+
+12/22/2019
+------------
+- Version 3.0 Master Release
 	- Added Python 2.6/7 and 3.x compatibility (@Cx01N, @Hubbl3, @Vinnybod)
-	- Improved Windows Defender Evasion 
+	- Improved Windows Defender Evasion (@Hubbl3)
 	- Updated mimikatz binary in Invoke-Mimikatz to version 2.2.0 20191125 (@Cx01N)
 	- Fixed port assignment feature to listeners (@Cx01N)
 	- Fixed issues with http_Hop listener (@Cx01N)
@@ -17,15 +90,15 @@
 	- Added Get-KerberosServiceTIcket (@OneLogicalMyth)
 	- Added Invoke-RID_Hijack (@r4wd3r)
 	- Added Invoke-internal_monologue (@audibleblink)
-	- Added Get-LAPSPasswords (@audibleblink)
+	- Added Get-LAPSPasswords (@ippsec)
 	- Added Invoke-SMBLogin (@mvelazc0)
-	- Added Sherlock (@_RastaMouse, @audibleblink)
+	- Added Sherlock (@ippsec)
 	- Added Outlook Sandbox Evasion for Windows Macro launcher (@Cx01N, @Hubbl3)
-	- Added Randomized JA3S signature (@Hubbl3) 
+	- Added Randomized JA3/S signature (@Hubbl3)
 	- Added AMSI Bypass based on Tal Liberman's AMSI Bypass (@Hubbl3)
 	- Added Invoke-CredentialPhisher (@quickbreach)
 	- Made Security Bypasses configurable for launchers (@phra)
-	- Updated Readme to include install instruction, EOL of Core Devloper support, new contribution rules 
+	- Updated Readme to include install instruction, EOL of Core Developer support, new contribution rules (@Hubbl3)
 	- Added OSX shellcode stager (@johneiser)
 	- Added Invoke-Phant0m (@leesoh)
 	- Added Get-AppLockerConfig (@matterpreter)
@@ -66,8 +139,6 @@ please contact us at info@bc-security.org
 	- Added onedrive listener for powershell agent (@mr64bit)
 	- Added opsec-safe aliases for ls, pwd, rm, mkdir, whoami, and getuid in the python agent 
 	- Updated office macro stager for python agent (@import-au)
-	
-
 
 01/04/2018
 ------------

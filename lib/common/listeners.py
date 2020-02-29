@@ -155,7 +155,7 @@ class Listeners(object):
                     # if the staging key isn't 32 characters, assume we're md5 hashing it
                     value = str(value).strip()
                     if len(value) != 32:
-                        stagingKeyHash = hashlib.md5(value).hexdigest()
+                        stagingKeyHash = hashlib.md5(value.encode('UTF-8')).hexdigest()
                         print(helpers.color('[!] Warning: staging key not 32 characters, using hash of staging key instead: %s' % (stagingKeyHash)))
                         listenerObject.options[option]['Value'] = stagingKeyHash
                     else:
@@ -202,6 +202,9 @@ class Listeners(object):
         category = listenerObject.info['Category']
         name = listenerObject.options['Name']['Value']
         nameBase = name
+
+        if isinstance(name, bytes):
+            name = name.decode('UTF-8')
 
         if not listenerObject.validate_options():
             return

