@@ -1109,7 +1109,7 @@ class Agents(object):
 
                     # update last seen time for user
                     last_logon = helpers.get_datetime()
-                    cur.execute("UPDATE users SET last_logon_time = ? WHERE user_id = ?",
+                    cur.execute("UPDATE users SET last_logon_time = ? WHERE id = ?",
                                 (last_logon, uid))
 
                     # dispatch this event
