@@ -166,12 +166,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     #(dbUsername, dbPassword) = execute_db_query(conn, "SELECT api_username, api_password FROM config")[0]
 
     if username:
-        execute_db_query(conn, "UPDATE users SET username=? WHERE id='1'", username)
+        u.update_username(1, username[0])
 
     if password:
-        password = hashlib.md5(password[0].encode('UTF-8'))
-        md5_password = password.hexdigest()
-        execute_db_query(conn, "UPDATE users SET password=? WHERE id='1'", [md5_password])
+        u.update_password(1, password[0])
 
     print('')
     print(" * Starting Empire RESTful API on port: %s" %(port))

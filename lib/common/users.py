@@ -1,7 +1,7 @@
 import threading
 import string
 import random
-import hashlib
+import bcrypt
 from . import helpers
 import json
 from pydispatch import dispatcher
@@ -34,7 +34,7 @@ class Users():
         """
         conn = self.get_db_connection()
         cur = conn.cursor()
-        [ exists ] = cur.execute("SELECT 1 FROM users WHERE id = ? LIMIT 1", (uid,)).fetchone()
+        exists = cur.execute("SELECT 1 FROM users WHERE id = ? LIMIT 1", (uid,)).fetchone()
         if exists:
             return True
 
@@ -46,16 +46,13 @@ class Users():
         """
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
-
-        # MD5 hash password before storage
-        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
         message = False
 
         try:
             self.lock.acquire()
             cur = conn.cursor()
             success = cur.execute("INSERT INTO users (username, password, last_logon_time, enabled, admin) VALUES (?,?,?,?,?)",
-                        (user_name, md5_password, last_logon, True, False))
+                        (user_name, self.get_hashed_password(password), last_logon, True, False))
 
             if success:
                 # dispatch the event
@@ -110,18 +107,20 @@ class Users():
         last_logon = helpers.get_datetime()
         conn = self.get_db_connection()
 
-        # MD5 hash password before storage
-        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
-
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT * FROM users WHERE username = ? AND password = ? AND enabled = true LIMIT 1"
-                        , (user_name, md5_password))
-            user = cur.fetchone()
-
+            user = cur.execute("SELECT password from users WHERE username = ? AND enabled = true LIMIT 1", (user_name,)).fetchone()
+            
             if user == None:
                 return None
+            
+            if not self.check_password(password, user[0]):
+                return None
+
+            cur.execute("SELECT * FROM users WHERE username = ? LIMIT 1"
+                        , (user_name,))
+            user = cur.fetchone()
 
             token = self.refresh_api_token()
             cur.execute("UPDATE users SET last_logon_time = ?, api_token = ? WHERE username = ?",
@@ -151,20 +150,41 @@ class Users():
             cur.close()
             self.lock.release()
 
+    def update_username(self, uid, username):
+        """
+        Update a user's username.
+        Currently only when empire is start up with the username arg.
+        """
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+
+            cur.execute("UPDATE users SET username=? WHERE id=?", (username, uid))
+
+            # dispatch the event
+            signal = json.dumps({
+                'print': True,
+                'message': "Username updated"
+            })
+            dispatcher.send(signal, sender="Users")
+        finally:
+            cur.close()
+            self.lock.release()
+
+        return True
+
     def update_password(self, uid, password):
         """
         Update the last logon timestamp for a user
         """
-        # MD5 hash password before storage
-        md5_password = hashlib.md5(password.encode('UTF-8')).hexdigest()
-
         conn = self.get_db_connection()
 
         try:
             self.lock.acquire()
             cur = conn.cursor()
 
-            cur.execute("UPDATE users SET password=? WHERE id=?", (md5_password, uid))
+            cur.execute("UPDATE users SET password=? WHERE id=?", (self.get_hashed_password(password), uid))
 
             # dispatch the event
             signal = json.dumps({
@@ -215,9 +235,16 @@ class Users():
         """
         conn = self.get_db_connection()
         cur = conn.cursor()
-        [ admin ] = cur.execute("SELECT admin FROM users WHERE id=?", (uid,)).fetchone()
+        admin = cur.execute("SELECT admin FROM users WHERE id=?", (uid,)).fetchone()
 
-        if admin == True:
+        if admin[0] == True:
             return True
 
         return False
+
+    def get_hashed_password(self, plain_text_password):
+        return bcrypt.hashpw(plain_text_password.encode("utf-8"), bcrypt.gensalt())
+
+    def check_password(self, plain_text_password, hashed_password):
+        return bcrypt.checkpw(plain_text_password.encode("utf-8"), hashed_password)
+
