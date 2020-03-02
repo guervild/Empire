@@ -76,10 +76,6 @@ c.execute('''CREATE TABLE config (
     "autorun_command" text,
     "autorun_data" text,
     "rootuser" boolean,
-    "api_username" text,
-    "api_password" text,
-    "api_current_token" text,
-    "api_permanent_token" text,
     "obfuscate" integer,
     "obfuscate_command" text
     )''')
