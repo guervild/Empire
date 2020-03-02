@@ -260,4 +260,3 @@ class Users():
             hashed_password = hashed_password.encode('UTF-8')
 
         return bcrypt.checkpw(plain_text_password, hashed_password)
-
