@@ -20,7 +20,7 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/BC-SECURITY/Empire)
 ![GitHub stars](https://img.shields.io/github/stars/BC-SECURITY/Empire)
 ![GitHub](https://img.shields.io/github/license/BC-Security/Empire)
-![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/fold_left.svg?style=flat)(https://twitter.com/BCSecurity1)
+[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/fold_left.svg?style=flat)](https://twitter.com/BCSecurity1)
 
 Keep up-to-date on our blog at [https://www.bc-security.org/blog][7]
 
