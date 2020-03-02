@@ -62,7 +62,6 @@ cd Empire
 sudo ./setup/install.sh
 ```
 
-There's also a [quickstart here](https://github.com/BC-SECURITY/Empire/wiki/Quickstart).
 
 ### Docker
 If you want to run Empire using a pre-built docker container:
