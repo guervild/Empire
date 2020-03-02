@@ -242,7 +242,7 @@ class Agents(object):
             return True
 
 
-    def save_file(self, sessionID, path, data, filesize, append=False):
+    def save_file(self, sessionID, path, data, append=False):
         """
         Save a file download for an agent to the appropriately constructed path.
         """
@@ -300,10 +300,8 @@ class Agents(object):
         finally:
             self.lock.release()
 
-        percent = round(int(os.path.getsize("%s/%s" % (save_path, filename)))/int(filesize)*100,2)
-
         # notify everyone that the file was downloaded
-        message = "[+] Part of file {} from {} saved [{}%]".format(filename, sessionID, percent)
+        message = "[+] Part of file {} from {} saved".format(filename, sessionID)
         signal = json.dumps({
             'print': True,
             'message': message
@@ -1100,10 +1098,10 @@ class Agents(object):
                     if pk is None:
                         pk = 0
                     pk = (pk + 1) % 65536
-                    cur.execute("INSERT INTO taskings (id, agent, data, unique_id, time_stamp) VALUES(?, ?, ?, ?, ?)", [pk, sessionID, task[:100], uid, timestamp])
+                    cur.execute("INSERT INTO taskings (id, agent, data, user_id, time_stamp) VALUES(?, ?, ?, ?, ?)", [pk, sessionID, task[:100], uid, timestamp])
 
                     # Create result for data when it arrives
-                    cur.execute("INSERT INTO results (id, agent, unique_id) VALUES (?,?,?)", (pk, sessionID, uid))
+                    cur.execute("INSERT INTO results (id, agent, user_id) VALUES (?,?,?)", (pk, sessionID, uid))
 
                     # append our new json-ified task and update the backend
                     agent_tasks.append([taskName, task, pk])
@@ -1111,7 +1109,7 @@ class Agents(object):
 
                     # update last seen time for user
                     last_logon = helpers.get_datetime()
-                    cur.execute("UPDATE users SET last_logon_time = ? WHERE unique_id = ?",
+                    cur.execute("UPDATE users SET last_logon_time = ? WHERE id = ?",
                                 (last_logon, uid))
 
                     # dispatch this event
@@ -1845,7 +1843,7 @@ class Agents(object):
                 data = data.decode('UTF-8')
 
             parts = data.split("|")
-            if len(parts) != 4:
+            if len(parts) != 3:
                 message = "[!] Received invalid file download response from {}".format(sessionID)
                 signal = json.dumps({
                     'print': True,
@@ -1853,15 +1851,15 @@ class Agents(object):
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
             else:
-                index, path, filesize, data = parts
+                index, path, data = parts
                 # decode the file data and save it off as appropriate
                 file_data = helpers.decode_base64(data.encode('UTF-8'))
                 name = self.get_agent_name_db(sessionID)
 
                 if index == "0":
-                    self.save_file(name, path, file_data, filesize)
+                    self.save_file(name, path, file_data)
                 else:
-                    self.save_file(name, path, file_data, filesize, append=True)
+                    self.save_file(name, path, file_data, append=True)
                 # update the agent log
                 msg = "file download: %s, part: %s" % (path, index)
                 self.save_agent_log(sessionID, msg)

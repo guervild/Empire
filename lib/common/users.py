@@ -49,9 +49,8 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            success = cur.execute(
-                "INSERT INTO users (username, password, last_logon_time, enabled, admin) VALUES (?,?,?,?,?)",
-                (user_name, self.get_hashed_password(password), last_logon, True, False))
+            success = cur.execute("INSERT INTO users (username, password, last_logon_time, enabled, admin) VALUES (?,?,?,?,?)",
+                        (user_name, self.get_hashed_password(password), last_logon, True, False))
 
             if success:
                 # dispatch the event
@@ -80,7 +79,7 @@ class Users():
             cur = conn.cursor()
 
             if not self.user_exists(uid):
-                message = False
+                    message = False
             elif self.is_admin(uid):
                 signal = json.dumps({
                     'print': True,
@@ -89,7 +88,7 @@ class Users():
                 message = False
             else:
                 cur.execute("UPDATE users SET enabled = ? WHERE id = ?",
-                            (not (disable), uid))
+                            (not(disable), uid))
                 signal = json.dumps({
                     'print': True,
                     'message': 'User {}'.format('disabled' if disable else 'enabled')
@@ -109,12 +108,11 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            user = cur.execute("SELECT password from users WHERE username = ? AND enabled = true LIMIT 1",
-                               (user_name,)).fetchone()
-
+            user = cur.execute("SELECT password from users WHERE username = ? AND enabled = true LIMIT 1", (user_name,)).fetchone()
+            
             if user == None:
                 return None
-
+            
             if not self.check_password(password, user[0]):
                 return None
 
@@ -142,13 +140,10 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute(
-                "SELECT id, username, api_token, last_logon_time, enabled, admin FROM users WHERE api_token = ? LIMIT 1",
-                (token,))
-            [id, username, api_token, last_logon_time, enabled, admin] = cur.fetchone()
-
-            return {'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time,
-                    'enabled': bool(enabled), 'admin': bool(admin)}
+            cur.execute("SELECT id, username, api_token, last_logon_time, enabled, admin FROM users WHERE api_token = ? LIMIT 1", (token,))
+            [ id, username, api_token, last_logon_time, enabled, admin ] = cur.fetchone()
+            
+            return { 'id': id, 'username': username, 'api_token': api_token, 'last_logon_time': last_logon_time, 'enabled': bool(enabled), 'admin': bool(admin) }
         finally:
             cur.close()
             self.lock.release()
@@ -204,6 +199,7 @@ class Users():
 
         return True
 
+
     def user_logout(self, uid):
         conn = self.get_db_connection()
 
@@ -248,15 +244,16 @@ class Users():
         return False
 
     def get_hashed_password(self, plain_text_password):
-        if isinstance(plain_text_password, str):
+        if isinstance(plain_text_password,str):
             plain_text_password = plain_text_password.encode('UTF-8')
 
         return bcrypt.hashpw(plain_text_password, bcrypt.gensalt())
 
     def check_password(self, plain_text_password, hashed_password):
-        if isinstance(plain_text_password, str):
+        if isinstance(plain_text_password,str):
             plain_text_password = plain_text_password.encode('UTF-8')
-        if isinstance(hashed_password, str):
+        if isinstance(hashed_password,str):
             hashed_password = hashed_password.encode('UTF-8')
 
         return bcrypt.checkpw(plain_text_password, hashed_password)
+
