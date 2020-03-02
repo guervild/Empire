@@ -44,7 +44,7 @@ Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Ch
 ## Install
 As of Empire 3.1.0, Empire only officially supports Python 3. If you still need Python 2 support, please use the [3.0.x branch](https://github.com/BC-SECURITY/Empire/tree/3.0.x) or releases. Also consider using our [Prebuilt Docker containers](#Docker) which use Python 3.
 
-__Note:__ Run ```./setup/reset.sh``` before starting Empire 3.1
+__Note:__ Run ```./setup/reset.sh``` before starting Empire 3.1 for the first time.
 ### Kali
 
 You can install the latest version of Empire by running the following:
