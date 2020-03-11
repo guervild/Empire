@@ -11,14 +11,14 @@ class Module(object):
         # Metadata info about the module, not modified during runtime
         self.info = {
             # Name for the module that will appear in module menus
-            'Name': 'Invoke-Something',
+            'Name': 'Invoke-Sharphound',
 
             # List of one or more authors for the module
             'Author': ['@yourname'],
 
             # More verbose multi-line description of the module
-            'Description': ('description line 1 '
-                            'description line 2'),
+            'Description': ('Ingestor / Data collector for the Bloodhound project '
+                            'Version 3'),
 
             # True if the module needs to run in the background
             'Background': False,
@@ -41,7 +41,8 @@ class Module(object):
             # List of any references/other comments
             'Comments': [
                 'comment',
-                'http://link/'
+                'http://https://github.com/BloodHoundAD/BloodHound'
+                'https://github.com/BloodHoundAD/SharpHound3'
             ]
         }
 
@@ -49,17 +50,46 @@ class Module(object):
         self.options = {
             # Format:
             #   value_name : {description, required, default_value}
-            'Agent': {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description':   'Agent to grab a screenshot from.',
-                'Required'   :   True,
-                'Value'      :   ''
+            'Agent' : {
+                'Description'   :   'Agent to run module on.',
+                'Required'      :   True,
+                'Value'         :   ''
             },
-            'Command': {
-                'Description':   'Command to execute',
-                'Required'   :   True,
-                'Value'      :   'test'
-            }
+            'CollectionMethod'  : {
+                'Description'   :   'Specifies the CollectionMethod (By default its DCOnly to be Opsecsafe)',
+                'Required'      :   False,
+                'Value'         :   'DCOnly'
+            },
+            'Stealth': {
+                'Description'   : 'Use stealth collection options, sacrifice the data quality of the impact on the network',
+                'Required'      : False,
+                'Value'         : 'True'
+            },
+            'Domain' : {
+                'Description'   : ' Specifies the domain to enumerate. If not specified, will enumerate the current domain your user context specifies',
+                'Required': False,
+                'Value': ''
+            },
+            'RandomFilenames' : {
+                'Description'   : 'Randomize file names completely',
+                'Required'      : False,
+                'Value'         : 'True'
+            },
+            'NoSaveCache' : {
+                'Description'   : 'Don\'t write the cache file to disk. Caching will still be performed in memory.',
+                'Required'      : False,
+                'Value'         :'True'
+            },
+            'OutputDirectory': {
+                'Description': 'Folder to output files to',
+                'Required': False,
+                'Value': '%TEMP%'
+            },
+            'DomainController': {
+                'Description': 'Domain Controller to connect too. Specifiying this can result in data loss',
+                'Required': False,
+                'Value': ''
+            },
         }
 
         # Save off a copy of the mainMenu object to access external
@@ -95,7 +125,7 @@ class Module(object):
         #   included in the comments.
         #
         # First method: Read in the source script from module_source
-        moduleSource = self.mainMenu.installPath + "/data/module_source/..."
+        moduleSource = self.mainMenu.installPath + "/data/module_source/recon/Sharphound.ps1"
         if obfuscate:
             helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
             moduleSource = moduleSource.replace("module_source", "obfuscated_module_source")
@@ -113,24 +143,7 @@ class Module(object):
         #   script = helpers.generate_dynamic_powershell_script(moduleCode, ["Get-Something", "Set-Something"])
         script = moduleCode
 
-        # Second method: For calling your imported source, or holding your
-        #   inlined script. If you're importing source using the first method,
-        #   ensure that you append to the script variable rather than set.
-        #
-        # The script should be stripped of comments, with a link to any
-        #   original reference script included in the comments.
-        #
-        # If your script is more than a few lines, it's probably best to use
-        #   the first method to source it.
-        #
-        # script += """
-        script = """
-function Invoke-Something {
-
-}
-Invoke-Something"""
-
-        scriptEnd = ""
+        scriptEnd = "Invoke-BloodHound"
 
         # Add any arguments to the end execution of the script
         for option, values in self.options.items():
